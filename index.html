@@ -184,7 +184,7 @@
 <body>
 
     <nav class="sidebar">
-        <h2>Navigation</h2>
+        <h2>Contents</h2>
         <ul>
             <li><a href="#section-1">1. Overview & Prerequisites</a></li>
             <li><a href="#section-2">2. Collection Configuration</a></li>
@@ -206,7 +206,7 @@
     <main class="main-content">
         
         <h1>SAP Integration Content Automation</h1>
-        <p>This document provides a comprehensive guide for using the <strong>Integration Content - Automation</strong> Postman Collection, designed to automate interaction with the SAP Integration Suite (formerly CPI/HCI) OData API for Integration Content.</p>
+        <p>This document provides a comprehensive guide for using the <strong>Integration Content - Automation</strong> Postman Collection, designed to automate interaction with the SAP Integration Suite OData API for Integration Content.</p>
 
         <h2 id="section-1">1. 🚀 Overview and Prerequisites</h2>
 
@@ -349,7 +349,7 @@
         <h4>How to Run</h4>
         <ol>
             <li>Set the control variables (<code>runGetConfigurations</code>, <code>runDownloadFlow</code>, <code>nodeServerUrl</code>) in the Collection Variables tab based on your requirements.</li>
-            <li><strong>Select the Folder to Run:</strong> In the Postman sidebar, click the <strong>three dots (...)</strong> next to the folder <strong><code>01 - Get Integration Content</code></strong> and select <strong>Run folder</strong>.</li>
+            <li><strong>Select the Folder to Run:</strong> In the Postman sidebar, click the <strong>three dots (...)</strong> next to the folder <strong><code>01 - Get Integration Content</code></strong> and select <strong>Run</strong>.</li>
             <li>In the Runner window, expand <strong>Advanced Settings</strong>.</li>
             <li>Check <strong>"Run collection without using stored cookies"</strong>.</li>
             <li>Uncheck <strong>"Save cookies after collection run"</strong>.</li>
@@ -363,7 +363,6 @@
                     <th>Request Name</th>
                     <th>Method</th>
                     <th>Purpose &amp; Functionality</th>
-                    <th>Output Variables</th>
                 </tr>
             </thead>
             <tbody>
@@ -371,31 +370,29 @@
                     <td><strong><code>Get Auth Token</code></strong></td>
                     <td><code>POST</code></td>
                     <td>Fetches the <code>accessToken</code>. Clears old tokens and optionally clears cookies.</td>
-                    <td><code>accessToken</code></td>
                 </tr>
                 <tr>
                     <td><strong><code>Get all integration packages</code></strong></td>
                     <td><code>GET</code></td>
                     <td><strong>Step 1: Discover Packages.</strong> Retrieves a list of all packages. Initializes loop variables and summary variables.</td>
-                    <td><code>PackageList</code>, <code>PackageCsvList</code>, <code>TotalPackageCount</code></td>
                 </tr>
                 <tr>
                     <td><strong><code>Get all integration flows of a package.</code></strong></td>
                     <td><code>GET</code></td>
                     <td><strong>Step 2: Loop through Packages.</strong> For the current package, it retrieves all contained iFlows. Updates sets up the inner iFlow loop.</td>
-                    <td><code>IflowList</code>, <code>IflowCsvList</code>, <code>TotalIflowCount</code></td>
+                  
                 </tr>
                 <tr>
                     <td><strong><code>Get configurations of an integration flow...</code></strong></td>
                     <td><code>GET</code></td>
                     <td><strong>Step 3a: Get Configurations.</strong> (If <code>runGetConfigurations=true</code>). Retrieves config parameters. <strong>Appends data to <code>csvData</code>.</strong></td>
-                    <td><code>csvData</code> (Accumulated)</td>
+                
                 </tr>
                 <tr>
                     <td><strong><code>Download an integration flow...</code></strong></td>
                     <td><code>GET</code></td>
                     <td><strong>Step 3b: Download Files.</strong> (If <code>runDownloadFlow=true</code>). Downloads the binary. Sends to local server. Acts as <strong>loop controller</strong>.</td>
-                    <td><code>parametersCsvOutput</code> (Final Report)</td>
+                  
                 </tr>
             </tbody>
         </table>
@@ -410,6 +407,14 @@
                 </tr>
             </thead>
             <tbody>
+                <tr>
+                    <td><code>TotalPackageCount</code></td>
+                    <td>Count of all Integration Packages found.</td>
+                </tr>
+                <tr>
+                    <td><code>TotalIflowCount</code></td>
+                    <td>Count of all Integration Flows found.</td>
+                </tr>
                 <tr>
                     <td><code>PackageCsvList</code></td>
                     <td>A CSV list of all Integration Packages found.</td>
@@ -431,7 +436,7 @@
         <h4>How to Run</h4>
         <ol>
             <li>Set the <code>specificPackageIDsList</code> variable with a comma-separated list of the Package IDs you want to process (e.g., <code>ID_A,ID_B,ID_C</code>).</li>
-            <li><strong>Select the Folder to Run:</strong> In the Postman sidebar, click the <strong>three dots (...)</strong> next to the folder <strong><code>1.1 - Get Specific Integration Content</code></strong> and select <strong>Run folder</strong>.</li>
+            <li><strong>Select the Folder to Run:</strong> In the Postman sidebar, click the <strong>three dots (...)</strong> next to the folder <strong><code>1.1 - Get Specific Integration Content</code></strong> and select <strong>Run</strong>.</li>
             <li>In the Runner window, expand <strong>Advanced Settings</strong>.</li>
             <li>Check <strong>"Run collection without using stored cookies"</strong>.</li>
             <li>Uncheck <strong>"Save cookies after collection run"</strong>.</li>
@@ -445,7 +450,7 @@
                     <th>Request Name</th>
                     <th>Method</th>
                     <th>Purpose &amp; Functionality</th>
-                    <th>Output Variables</th>
+                   
                 </tr>
             </thead>
             <tbody>
@@ -453,31 +458,31 @@
                     <td><strong><code>Logic: Specific Package Iteration</code></strong></td>
                     <td><code>GET</code></td>
                     <td>Main router: initializes the list on iteration 0 and loops through packages on subsequent calls.</td>
-                    <td><code>specificPackageIDs</code></td>
+                 
                 </tr>
                 <tr>
                     <td><strong><code>Get Auth Token (Specific)</code></strong></td>
                     <td><code>POST</code></td>
                     <td>Fetches the required access token.</td>
-                    <td><code>accessToken</code></td>
+                   
                 </tr>
                 <tr>
                     <td><strong><code>Get Package Details by ID</code></strong></td>
                     <td><code>GET</code></td>
                     <td>Retrieves the Package Name for reporting purposes.</td>
-                    <td><code>currentPackageName</code></td>
+                    
                 </tr>
                 <tr>
                     <td><strong><code>Get all integration flows...</code></strong></td>
                     <td><code>GET</code></td>
                     <td>Retrieves the iFlows for the currently processed package.</td>
-                    <td><code>iFlows</code></td>
+                    
                 </tr>
                 <tr>
                     <td><strong><code>Get configurations...</code></strong></td>
                     <td><code>GET</code></td>
                     <td>Retrieves configurations. <strong>Appends to <code>specificCsvData</code>.</strong> Loops to next iFlow/Package.</td>
-                    <td><code>specificParametersCsvOutput</code> (Final Report)</td>
+                 
                 </tr>
             </tbody>
         </table>
@@ -502,7 +507,7 @@
         <h3 id="section-3-3">3.3. Folder 02: Update Iflow Configuration (Mass Update)</h3>
         <p>This workflow is used to <strong>mass update</strong> configuration parameters of iFlows using the <strong>Postman Collection Runner</strong> and an attached data file.</p>
 
-        <h4>Data File Preparation (Required CSV Headers)</h4>
+        <h4>Data File Preparation (CSV Headers)</h4>
         <p>You must create a data file (CSV) with the following mandatory headers. Each row will represent one configuration parameter to be updated:</p>
         
         <table>
@@ -515,17 +520,17 @@
             </thead>
             <tbody>
                 <tr>
-                    <td><code>PackageName</code> </code></td>
+                    <td><strong><code>PackageName</code></strong></td>
                     <td>The Name of the Package Containing Iflow <code>(Optional)</code>.</td>
                     <td><code>ERP_Sync</code></td>
                 </tr>
                 <tr>
-                    <td><code>PackageID</code></td>
+                    <td><strong><code>PackageID</code></strong></td>
                     <td>The ID of the Package Containing Iflow <code>(Optional)</code>.</td>
                     <td><code>PKG_ERP_SYNC</code></td>
                 </tr>
                 <tr>
-                    <td><code>IflowName</code></td>
+                    <td><strong><code>IflowName</code></strong></td>
                     <td>The Name of the Integration Flow artifact <code>(Optional)</code>.</td>
                     <td><code>ERP_To_S4</code></td>
                 </tr>
@@ -616,7 +621,7 @@ HCM_Flows,PKG_HCM,Hiring_SF,IFLOW_HR,1.0.5,Sender_URL_Path,/new/path/hcm,xsd:str
         <h4>How to Run</h4>
         <ol>
             <li><strong>Prepare the Data File:</strong> Create the CSV file as specified above.</li>
-            <li><strong>Select the Folder to Run:</strong> In the Postman sidebar, click the <strong>three dots (...)</strong> next to the folder <strong><code>02 - Update Iflow Configuration</code></strong> and select <strong>Run folder</strong>.</li>
+            <li><strong>Select the Folder to Run:</strong> In the Postman sidebar, click the <strong>three dots (...)</strong> next to the folder <strong><code>02 - Update Iflow Configuration</code></strong> and select <strong>Run</strong>.</li>
             <li><strong>Load the Data File:</strong> Click <strong>Select File</strong> and upload your prepared CSV file.</li>
             <li>In the Runner window, expand <strong>Advanced Settings</strong>.</li>
             <li>Check <strong>"Run collection without using stored cookies"</strong>.</li>
@@ -629,40 +634,44 @@ HCM_Flows,PKG_HCM,Hiring_SF,IFLOW_HR,1.0.5,Sender_URL_Path,/new/path/hcm,xsd:str
             <thead>
                 <tr>
                     <th>Request Name</th>
+                    <th>Method</th>
                     <th>Iteration 0 (Setup)</th>
                     <th>Iteration &ge; 1 (Loop)</th>
                     <th>Purpose</th>
-                    <th>Output Variables</th>
+                   
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td><strong><code>Iteration Check</code></strong></td>
-                    <td class="runner-step">Clears tokens, initializes <code>csvResults</code>, proceeds to <code>Get Auth Token</code>.</td>
-                    <td class="runner-step"><strong>Jumps directly to <code>Update configuration...</code></strong></td>
+                    <td><code>GET</code></td>
+                    <td>Clears tokens, initializes <code>csvResults</code>, proceeds to <code>Get Auth Token</code>.</td>
+                    <td>Jumps directly to <code>Update configuration...</code></td>
                     <td>The router that controls efficient looping.</td>
-                    <td><code>csvResults</code> (Init)</td>
+                   
                 </tr>
                 <tr>
                     <td><strong><code>Get Auth Token</code></strong></td>
-                    <td class="runner-step">Fetches <code>accessToken</code>, proceeds to <code>Get CSRF token</code>.</td>
-                    <td class="runner-step"><strong>Skipped</strong></td>
+                    <td><code>POST</code></td>
+                    <td>Fetches <code>accessToken</code>, proceeds to <code>Get CSRF token</code>.</td>
+                    <td>Skipped</td>
                     <td>Authorizes the session (once per run).</td>
-                    <td><code>accessToken</code></td>
+                   
                 </tr>
                 <tr>
                     <td><strong><code>Get CSRF token</code></strong></td>
-                    <td class="runner-step">Fetches <code>csrfToken</code>, proceeds to <code>Update configuration...</code>.</td>
-                    <td class="runner-step"><strong>Skipped</strong></td>
+                    <td><code>GET</code></td>
+                    <td>Fetches <code>csrfToken</code>, proceeds to <code>Update configuration...</code>.</td>
+                    <td>Skipped</td>
                     <td>Fetches the token required for the <code>PUT</code> (write) operation (once per run).</td>
-                    <td><code>csrfToken</code></td>
+                 
                 </tr>
                 <tr>
                     <td><strong><code>Update configuration parameter...</code></strong></td>
+                    <td><code>PUT</code></td>
                     <td>Executes the update for the first data row.</td>
                     <td>Executes the update for the current data row.</td>
                     <td>Updates the config and appends to <code>csvResults</code>.</td>
-                    <td><code>csvResults</code> (Appended)</td>
                 </tr>
             </tbody>
         </table>
@@ -687,7 +696,7 @@ HCM_Flows,PKG_HCM,Hiring_SF,IFLOW_HR,1.0.5,Sender_URL_Path,/new/path/hcm,xsd:str
         <h3 id="folder-03">3.4. Folder 03: Deploy Iflows</h3>
         <p>This workflow deploys iFlow artifacts based on the IDs and Versions provided in the data file.</p>
 
-        <h4>Data File Preparation (Required CSV Headers)</h4>
+        <h4>Data File Preparation (CSV Headers)</h4>
         <table>
             <thead>
                 <tr>
@@ -704,7 +713,7 @@ HCM_Flows,PKG_HCM,Hiring_SF,IFLOW_HR,1.0.5,Sender_URL_Path,/new/path/hcm,xsd:str
                 </tr>
                 <tr>
                     <td><strong><code>Version</code></strong></td>
-                    <td>The version to deploy. Defaults to <code>active</code> if empty.</td>
+                    <td>The version to deploy. Defaults to <code>active</code> if empty <code>(Optional)</code>.</td>
                     <td><code>1.0.0</code> or <code>active</code></td>
                 </tr>
             </tbody>
@@ -743,7 +752,7 @@ IFLOW_C,</code></pre>
         <h4>How to Run</h4>
         <ol>
             <li><strong>Prepare the Data File:</strong> Create a CSV file with the required headers.</li>
-            <li><strong>Select the Folder to Run:</strong> In the Postman sidebar, click the <strong>three dots (...)</strong> next to the folder <strong><code>03 - Deploy Iflows</code></strong> and select <strong>Run folder</strong>.</li>
+            <li><strong>Select the Folder to Run:</strong> In the Postman sidebar, click the <strong>three dots (...)</strong> next to the folder <strong><code>03 - Deploy Iflows</code></strong> and select <strong>Run</strong>.</li>
             <li><strong>Load the Data File:</strong> Click <strong>Select File</strong> and upload your CSV file.</li>
             <li>In the Runner window, expand <strong>Advanced Settings</strong>.</li>
             <li>Check <strong>"Run collection without using stored cookies"</strong>.</li>
@@ -756,40 +765,45 @@ IFLOW_C,</code></pre>
             <thead>
                 <tr>
                     <th>Request Name</th>
+                    <th>Method</th>
                     <th>Iteration 0 (Setup)</th>
                     <th>Iteration &ge; 1 (Loop)</th>
                     <th>Purpose</th>
-                    <th>Output Variables</th>
+                   
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td><strong><code>Logic: Deploy Iflow Iteration</code></strong></td>
-                    <td class="runner-step">Validates data file, clears tokens, proceeds to <code>Get Auth Token</code>.</td>
-                    <td class="runner-step"><strong>Jumps directly to <code>Deploy Iflow</code></strong></td>
+                    <td><code>GET</code></td>
+                    <td>Validates data file, clears tokens, proceeds to <code>Get Auth Token</code>.</td>
+                    <td>Jumps directly to <code>Deploy Iflow</code></td>
                     <td>Controls the loop and ensures setup runs only once.</td>
-                    <td><code>deployIflowsResults</code> (Init)</td>
+
                 </tr>
                 <tr>
                     <td><strong><code>Get Auth Token</code></strong></td>
-                    <td class="runner-step">Fetches <code>accessToken</code>.</td>
-                    <td class="runner-step"><strong>Skipped</strong></td>
+                    <td><code>POST</code></td>
+                    <td>Fetches <code>accessToken</code>.</td>
+                    <td>Skipped</td>
                     <td>Authorizes the session.</td>
-                    <td><code>accessToken</code></td>
+
                 </tr>
                 <tr>
                     <td><strong><code>Get CSRF token</code></strong></td>
-                    <td class="runner-step">Fetches <code>csrfToken</code>.</td>
-                    <td class="runner-step"><strong>Skipped</strong></td>
+                    <td><code>GET</code></td>
+                    <td>Fetches <code>csrfToken</code>.</td>
+                    <td>Skipped</td>
                     <td>Enables POST/DELETE operations.</td>
-                    <td><code>csrfToken</code></td>
+
                 </tr>
                 <tr>
                     <td><strong><code>Deploy Iflow</code></strong></td>
+                    <td><code>POST</code></td>
                     <td>Deploys the first iflow from data file.</td>
                     <td>Deploys the current iflow from data file.</td>
-                    <td>Performs the deployment action (<code>POST .../DeployIntegrationDesigntimeArtifact</code>).</td>
-                    <td><code>deployIflowsResults</code> (Appended)</td>
+                    <td>Performs the deployment action.</td>
+
                 </tr>
             </tbody>
         </table>
@@ -814,7 +828,7 @@ IFLOW_C,</code></pre>
         <h3 id="folder-04">3.5. Folder 04: UnDeploy Iflows</h3>
         <p>This workflow undeploys (removes from runtime) iFlow artifacts based on the IDs provided in the data file.</p>
 
-        <h4>Data File Preparation (Required CSV Headers)</h4>
+        <h4>Data File Preparation (CSV Headers)</h4>
         <table>
             <thead>
                 <tr>
@@ -861,7 +875,7 @@ IFLOW_D</code></pre>
         <h4>How to Run</h4>
         <ol>
             <li><strong>Prepare the Data File:</strong> Create a CSV file with the required headers.</li>
-            <li><strong>Select the Folder to Run:</strong> In the Postman sidebar, click the <strong>three dots (...)</strong> next to the folder <strong><code>04 - UnDeploy Iflows</code></strong> and select <strong>Run folder</strong>.</li>
+            <li><strong>Select the Folder to Run:</strong> In the Postman sidebar, click the <strong>three dots (...)</strong> next to the folder <strong><code>04 - UnDeploy Iflows</code></strong> and select <strong>Run</strong>.</li>
             <li><strong>Load the Data File:</strong> Click <strong>Select File</strong> and upload your CSV file.</li>
             <li>In the Runner window, expand <strong>Advanced Settings</strong>.</li>
             <li>Check <strong>"Run collection without using stored cookies"</strong>.</li>
@@ -874,40 +888,45 @@ IFLOW_D</code></pre>
             <thead>
                 <tr>
                     <th>Request Name</th>
+                    <th>Method</th>
                     <th>Iteration 0 (Setup)</th>
                     <th>Iteration &ge; 1 (Loop)</th>
                     <th>Purpose</th>
-                    <th>Output Variables</th>
+        
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td><strong><code>Logic: UnDeploy Iflow Iteration</code></strong></td>
-                    <td class="runner-step">Validates data file, clears tokens, proceeds to <code>Get Auth Token</code>.</td>
-                    <td class="runner-step"><strong>Jumps directly to <code>Undeploy Iflow</code></strong></td>
+                    <td><code>GET</code></td>
+                    <td>Validates data file, clears tokens, proceeds to <code>Get Auth Token</code>.</td>
+                    <td>Jumps directly to <code>Undeploy Iflow</code></td>
                     <td>Controls the loop and ensures setup runs only once.</td>
-                    <td><code>undeployIflowsResults</code> (Init)</td>
+           
                 </tr>
                 <tr>
                     <td><strong><code>Get Auth Token</code></strong></td>
-                    <td class="runner-step">Fetches <code>accessToken</code>.</td>
-                    <td class="runner-step"><strong>Skipped</strong></td>
+                    <td><code>POST</code></td>
+                    <td>Fetches <code>accessToken</code>.</td>
+                    <td>Skipped</td>
                     <td>Authorizes the session.</td>
-                    <td><code>accessToken</code></td>
+           
                 </tr>
                 <tr>
                     <td><strong><code>Get CSRF token</code></strong></td>
-                    <td class="runner-step">Fetches <code>csrfToken</code>.</td>
-                    <td class="runner-step"><strong>Skipped</strong></td>
+                    <td><code>GET</code></td>
+                    <td>Fetches <code>csrfToken</code>.</td>
+                    <td>Skipped</td>
                     <td>Enables POST/DELETE operations.</td>
-                    <td><code>csrfToken</code></td>
+             
                 </tr>
                 <tr>
                     <td><strong><code>Undeploy Iflow</code></strong></td>
+                    <td><code>DELETE</code></td>
                     <td>Undeploys the first iflow.</td>
                     <td>Undeploys the current iflow.</td>
-                    <td>Performs the undeploy action (<code>DELETE .../IntegrationRuntimeArtifacts</code>).</td>
-                    <td><code>undeployIflowsResults</code> (Appended)</td>
+                    <td>Performs the undeploy action.</td>
+             
                 </tr>
             </tbody>
         </table>
@@ -932,7 +951,7 @@ IFLOW_D</code></pre>
         <h3 id="folder-05">3.6. Folder 05: Deploy Script Collections</h3>
         <p>This workflow deploys Script Collection artifacts to the runtime.</p>
 
-        <h4>Data File Preparation (Required CSV Headers)</h4>
+        <h4>Data File Preparation (CSV Headers)</h4>
         <table>
             <thead>
                 <tr>
@@ -949,7 +968,7 @@ IFLOW_D</code></pre>
                 </tr>
                 <tr>
                     <td><strong><code>Version</code></strong></td>
-                    <td>The version to deploy. Defaults to <code>active</code> if empty.</td>
+                    <td>The version to deploy. Defaults to <code>active</code> if empty <code>(Optional)</code>.</td>
                     <td><code>1.0.0</code></td>
                 </tr>
             </tbody>
@@ -983,7 +1002,7 @@ AUTH_HANDLERS,active</code></pre>
         <h4>How to Run</h4>
         <ol>
             <li><strong>Prepare the Data File:</strong> Create a CSV file with the required headers.</li>
-            <li><strong>Select the Folder to Run:</strong> In the Postman sidebar, click the <strong>three dots (...)</strong> next to the folder <strong><code>05 - Deploy Script Collections</code></strong> and select <strong>Run folder</strong>.</li>
+            <li><strong>Select the Folder to Run:</strong> In the Postman sidebar, click the <strong>three dots (...)</strong> next to the folder <strong><code>05 - Deploy Script Collections</code></strong> and select <strong>Run</strong>.</li>
             <li><strong>Load the Data File:</strong> Click <strong>Select File</strong> and upload your CSV file.</li>
             <li>In the Runner window, expand <strong>Advanced Settings</strong>.</li>
             <li>Check <strong>"Run collection without using stored cookies"</strong>.</li>
@@ -996,40 +1015,45 @@ AUTH_HANDLERS,active</code></pre>
             <thead>
                 <tr>
                     <th>Request Name</th>
+                    <th>Method</th>
                     <th>Iteration 0 (Setup)</th>
                     <th>Iteration &ge; 1 (Loop)</th>
                     <th>Purpose</th>
-                    <th>Output Variables</th>
+                 
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td><strong><code>Logic: Deploy Script Iteration</code></strong></td>
-                    <td class="runner-step">Validates data file, clears tokens, proceeds to <code>Get Auth Token</code>.</td>
-                    <td class="runner-step"><strong>Jumps directly to <code>Deploy Script...</code></strong></td>
+                    <td><code>GET</code></td>
+                    <td>Validates data file, clears tokens, proceeds to <code>Get Auth Token</code>.</td>
+                    <td>Jumps directly to <code>Deploy Script...</code></td>
                     <td>Controls the loop.</td>
-                    <td><code>deployScriptCollectionResults</code> (Init)</td>
+                   
                 </tr>
                 <tr>
                     <td><strong><code>Get Auth Token</code></strong></td>
-                    <td class="runner-step">Fetches <code>accessToken</code>.</td>
-                    <td class="runner-step"><strong>Skipped</strong></td>
+                    <td><code>POST</code></td>
+                    <td>Fetches <code>accessToken</code>.</td>
+                    <td>Skipped</td>
                     <td>Authorizes the session.</td>
-                    <td><code>accessToken</code></td>
+                    
                 </tr>
                 <tr>
                     <td><strong><code>Get CSRF token</code></strong></td>
-                    <td class="runner-step">Fetches <code>csrfToken</code>.</td>
-                    <td class="runner-step"><strong>Skipped</strong></td>
+                    <td><code>GET</code></td>
+                    <td>Fetches <code>csrfToken</code>.</td>
+                    <td>Skipped</td>
                     <td>Enables POST/DELETE operations.</td>
-                    <td><code>csrfToken</code></td>
+                  
                 </tr>
                 <tr>
                     <td><strong><code>Deploy Script Collection</code></strong></td>
+                    <td><code>POST</code></td>
                     <td>Deploys the first script collection.</td>
                     <td>Deploys the current script collection.</td>
-                    <td>Performs the deployment action (<code>POST .../DeployScriptCollectionDesigntimeArtifact</code>).</td>
-                    <td><code>deployScriptCollectionResults</code> (Appended)</td>
+                    <td>Performs the deployment action.</td>
+                   
                 </tr>
             </tbody>
         </table>
@@ -1054,7 +1078,7 @@ AUTH_HANDLERS,active</code></pre>
         <h3 id="folder-06">3.7. Folder 06: Deploy Value Mappings</h3>
         <p>This workflow deploys Value Mapping artifacts to the runtime.</p>
 
-        <h4>Data File Preparation (Required CSV Headers)</h4>
+        <h4>Data File Preparation (CSV Headers)</h4>
         <table>
             <thead>
                 <tr>
@@ -1071,7 +1095,7 @@ AUTH_HANDLERS,active</code></pre>
                 </tr>
                 <tr>
                     <td><strong><code>Version</code></strong></td>
-                    <td>The version to deploy. Defaults to <code>active</code> if empty.</td>
+                    <td>The version to deploy. Defaults to <code>active</code> if empty <code>(Optional)</code>.</td>
                     <td><code>2.1.0</code></td>
                 </tr>
             </tbody>
@@ -1105,7 +1129,7 @@ MAP_STATUS_CODES,2.1.0</code></pre>
         <h4>How to Run</h4>
         <ol>
             <li><strong>Prepare the Data File:</strong> Create a CSV file with the required headers.</li>
-            <li><strong>Select the Folder to Run:</strong> In the Postman sidebar, click the <strong>three dots (...)</strong> next to the folder <strong><code>06 - Deploy Value Mappings</code></strong> and select <strong>Run folder</strong>.</li>
+            <li><strong>Select the Folder to Run:</strong> In the Postman sidebar, click the <strong>three dots (...)</strong> next to the folder <strong><code>06 - Deploy Value Mappings</code></strong> and select <strong>Run</strong>.</li>
             <li><strong>Load the Data File:</strong> Click <strong>Select File</strong> and upload your CSV file.</li>
             <li>In the Runner window, expand <strong>Advanced Settings</strong>.</li>
             <li>Check <strong>"Run collection without using stored cookies"</strong>.</li>
@@ -1118,40 +1142,45 @@ MAP_STATUS_CODES,2.1.0</code></pre>
             <thead>
                 <tr>
                     <th>Request Name</th>
+                    <th>Method</th>
                     <th>Iteration 0 (Setup)</th>
                     <th>Iteration &ge; 1 (Loop)</th>
                     <th>Purpose</th>
-                    <th>Output Variables</th>
+                 
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td><strong><code>Logic: Deploy VM Iteration</code></strong></td>
-                    <td class="runner-step">Validates data file, clears tokens, proceeds to <code>Get Auth Token</code>.</td>
-                    <td class="runner-step"><strong>Jumps directly to <code>Deploy Value Map...</code></strong></td>
+                    <td><code>GET</code></td>
+                    <td>Validates data file, clears tokens, proceeds to <code>Get Auth Token</code>.</td>
+                    <td>Jumps directly to <code>Deploy Value Map...</code></td>
                     <td>Controls the loop.</td>
-                    <td><code>deployValueMappingResults</code> (Init)</td>
+               
                 </tr>
                 <tr>
                     <td><strong><code>Get Auth Token</code></strong></td>
-                    <td class="runner-step">Fetches <code>accessToken</code>.</td>
-                    <td class="runner-step"><strong>Skipped</strong></td>
+                    <td><code>POST</code></td>
+                    <td>Fetches <code>accessToken</code>.</td>
+                    <td>Skipped</td>
                     <td>Authorizes the session.</td>
-                    <td><code>accessToken</code></td>
+               
                 </tr>
                 <tr>
                     <td><strong><code>Get CSRF token</code></strong></td>
-                    <td class="runner-step">Fetches <code>csrfToken</code>.</td>
-                    <td class="runner-step"><strong>Skipped</strong></td>
+                    <td><code>GET</code></td>
+                    <td>Fetches <code>csrfToken</code>.</td>
+                    <td>>Skipped</td>
                     <td>Enables POST/DELETE operations.</td>
-                    <td><code>csrfToken</code></td>
+                 
                 </tr>
                 <tr>
                     <td><strong><code>Deploy Value Mapping</code></strong></td>
+                    <td><code>POST</code></td>
                     <td>Deploys the first value mapping.</td>
                     <td>Deploys the current value mapping.</td>
-                    <td>Performs the deployment action (<code>POST .../DeployValueMappingDesigntimeArtifact</code>).</td>
-                    <td><code>deployValueMappingResults</code> (Appended)</td>
+                    <td>Performs the deployment action.</td>
+                  
                 </tr>
             </tbody>
         </table>
