@@ -3037,110 +3037,57 @@
 		{
 			"key": "Version",
 			"value": "active",
-			"description": {
-				"content": "User Defined",
-				"type": "text/plain"
-			}
+			"description": "User Defined"
 		},
 		{
 			"key": "runGetConfigurations",
 			"value": "",
-			"description": {
-				"content": "User Defined",
-				"type": "text/plain"
-			}
+			"description": "User Defined"
 		},
 		{
 			"key": "runDownloadFlow",
 			"value": "",
-			"description": {
-				"content": "User Defined",
-				"type": "text/plain"
-			}
+			"description": "User Defined"
 		},
 		{
 			"key": "nodeServerUrl",
 			"value": "",
-			"description": {
-				"content": "User Defined",
-				"type": "text/plain"
-			}
+			"description": "User Defined"
 		},
 		{
 			"key": "logging",
 			"value": "",
-			"description": {
-				"content": "User Defined",
-				"type": "text/plain"
-			}
+			"description": "User Defined"
 		},
 		{
 			"key": "cookieDomainsToClear",
 			"value": "",
-			"description": {
-				"content": "User Defined",
-				"type": "text/plain"
-			}
+			"description": "User Defined"
 		},
 		{
 			"key": "specificPackageIDsList",
 			"value": "",
-			"description": {
-				"content": "User Defined",
-				"type": "text/plain"
-			}
+			"description": "User Defined"
 		},
 		{
-			"key": "accessToken",
-			"value": ""
+			"key": "baseUrl",
+			"value": "",
+			"description": "User Defined"
 		},
 		{
-			"key": "TotalPackageCount",
-			"value": ""
+			"key": "TokenUrl",
+			"value": "",
+			"description": "User Defined"
 		},
 		{
-			"key": "TotalIflowCount",
-			"value": ""
+			"key": "ClientID",
+			"value": "",
+			"description": "User Defined"
 		},
 		{
-			"key": "PackageList",
-			"value": ""
-		},
-		{
-			"key": "IflowList",
-			"value": ""
-		},
-		{
-			"key": "PackageCsvList",
-			"value": ""
-		},
-		{
-			"key": "IflowCsvList",
-			"value": ""
-		},
-		{
-			"key": "parametersCsvOutput",
-			"value": ""
-		},
-		{
-			"key": "csrfToken",
-			"value": ""
-		},
-		{
-			"key": "nodeServerStatus",
-			"value": ""
-		},
-		{
-			"key": "specificParametersCsvOutput",
-			"value": ""
-		},
-		{
-			"key": "undeployIflowsResults",
-			"value": ""
-		},
-		{
-			"key": "deployIflowsResults",
-			"value": ""
+			"key": "ClientSecret",
+			"value": "",
+			"description": "User Defined"
 		}
 	]
 }
