@@ -1,0 +1,3146 @@
+{
+	"info": {
+		"_postman_id": "155aa88c-9545-493d-b767-6d68b2a584c4",
+		"name": "Integration Content - Automation",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "6853691"
+	},
+	"item": [
+		{
+			"name": "01 - Get Integration Content",
+			"item": [
+				{
+					"name": "Get Auth Token",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR \"1. Get Token\" PRE-REQUEST ---\r",
+									"\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"if (logging) console.log(\"Preparing for new run: Clearing old data...\");\r",
+									"\r",
+									"// 1. Clear all token variables\r",
+									"const tokenVariables = [\"accessToken\", \"refreshToken\", \"bearerToken\"];\r",
+									"tokenVariables.forEach(v => {\r",
+									"    pm.collectionVariables.unset(v);\r",
+									"});\r",
+									"if (logging) console.log(\"Cleared old token variables.\");\r",
+									"\r",
+									"// --- 💥 NEW: Read domains from collection variable ---\r",
+									"const domainsString = pm.collectionVariables.get(\"cookieDomainsToClear\");\r",
+									"let domainsToClear = [];\r",
+									"\r",
+									"if (domainsString) {\r",
+									"    // Split the string by '|' and trim any extra whitespace\r",
+									"    domainsToClear = domainsString.split('|').map(domain => domain.trim()).filter(domain => domain.length > 0);\r",
+									"    if (logging) console.log(`Found ${domainsToClear.length} domains to clear cookies for: [${domainsToClear.join(', ')}]`);\r",
+									"} else {\r",
+									"    if (logging) console.log(\"No 'cookieDomainsToClear' variable found. Skipping cookie clear.\");\r",
+									"    return; // Stop this part of the script\r",
+									"}\r",
+									"// --- End of new logic ---\r",
+									"\r",
+									"if (domainsToClear.length === 0) {\r",
+									"    if (logging) console.log(\"No domains to clear.\");\r",
+									"    return;\r",
+									"}\r",
+									"\r",
+									"let domainsCleared = 0;\r",
+									"domainsToClear.forEach(domain => {\r",
+									"    pm.cookies.clear(domain, (error) => {\r",
+									"        if (error) {\r",
+									"            console.error(`Error clearing cookies for ${domain}:`, error);\r",
+									"        }\r",
+									"        domainsCleared++;\r",
+									"        if (domainsCleared === domainsToClear.length) {\r",
+									"            if (logging) console.log(\"✅ Cookie clearing complete.\");\r",
+									"        }\r",
+									"    });\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR \"1. Get Token\" TESTS ---\r",
+									"\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"if (logging) console.log(\"Token request finished. Processing response...\");\r",
+									"\r",
+									"// --- Test Case 1: Check for successful request ---\r",
+									"pm.test(\"Status code is 200 OK\", () => {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// --- Test Case 2: Check if response is valid JSON ---\r",
+									"pm.test(\"Response body is valid JSON\", () => {\r",
+									"    pm.response.to.be.json;\r",
+									"    // This test will fail here if it's not JSON, preventing errors below\r",
+									"});\r",
+									"\r",
+									"try {\r",
+									"    const response = pm.response.json();\r",
+									"    \r",
+									"    // 1. IMPORTANT: Change 'access_token' to the actual key\r",
+									"    // for the token in your API's response (e.g., 'token', 'jwt', etc.)\r",
+									"    const rawToken = response.access_token; \r",
+									"\r",
+									"    // --- Test Case 3: Check if token exists in the response ---\r",
+									"    pm.test(\"Access token is present in the response\", () => {\r",
+									"        pm.expect(rawToken).to.exist;\r",
+									"    });\r",
+									"\r",
+									"    // --- Test Case 4: Check if token is a non-empty string ---\r",
+									"    pm.test(\"Access token is a non-empty string\", () => {\r",
+									"        pm.expect(rawToken).to.be.a('string').and.to.have.lengthOf.at.least(20); // Assumes token is at least 20 chars\r",
+									"    });\r",
+									"\r",
+									"    if (rawToken) {\r",
+									"        // --- 💥 UPDATED: Save the raw token directly ---\r",
+									"        pm.collectionVariables.set(\"accessToken\", rawToken);\r",
+									"        \r",
+									"        if (logging) console.log(\"New raw token saved to 'accessToken' variable.\");\r",
+									"\r",
+									"        // 2. Automatically start the next request in your collection\r",
+									"        pm.execution.setNextRequest(\"Get all integration packages\");\r",
+									"\r",
+									"    } else {\r",
+									"        // This part will run if the token is null, undefined, or an empty string \"\"\r",
+									"        console.error(\"Could not find a valid token in response body. Stopping run.\");\r",
+									"        pm.execution.setNextRequest(null); // Stop the run\r",
+									"    }\r",
+									"\r",
+									"} catch (e) {\r",
+									"    // Critical error, always log this (e.g., if pm.response.json() failed)\r",
+									"    console.error(\"Failed to parse token response:\", e);\r",
+									"    pm.execution.setNextRequest(null); // Stop the run\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{ClientSecret}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{ClientID}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "client_credentials",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{TokenUrl}}",
+							"host": [
+								"{{TokenUrl}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get all integration packages",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR API 1: Get all integration packages ---\r",
+									"\r",
+									"console.log(\"--- 🚀 STARTING RUN: Checking prerequisites ---\");\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"// Get control variables\r",
+									"const runConfigs = pm.collectionVariables.get(\"runGetConfigurations\") === \"true\";\r",
+									"const runDownload = pm.collectionVariables.get(\"runDownloadFlow\") === \"true\";\r",
+									"const nodeServerBaseUrl = pm.collectionVariables.get(\"nodeServerUrl\");\r",
+									"\r",
+									"// This function holds the main logic, which will run *after* the server check.\r",
+									"function mainScriptLogic() {\r",
+									"    if (logging) console.log(\"✅ Prerequisite check passed. Fetching all packages...\");\r",
+									"\r",
+									"    // --- Reset all summary variables ---\r",
+									"    if (logging) console.log(\"Resetting all collection variables to their initial state...\");\r",
+									"    pm.collectionVariables.set(\"TotalPackageCount\", 0);\r",
+									"    pm.collectionVariables.set(\"TotalIflowCount\", 0);\r",
+									"    pm.collectionVariables.set(\"PackageList\", \"[]\");\r",
+									"    pm.collectionVariables.set(\"IflowList\", \"{}\");\r",
+									"    pm.collectionVariables.set(\"PackageCsvList\", \"\");\r",
+									"    pm.collectionVariables.set(\"IflowCsvList\", \"\");\r",
+									"    pm.collectionVariables.set(\"parametersCsvOutput\", \"\");\r",
+									"\r",
+									"    pm.test(\"Status code is 200 OK\", () => pm.response.to.have.status(200));\r",
+									"    pm.test(\"Response is a valid JSON\", () => pm.response.to.be.json);\r",
+									"\r",
+									"    try {\r",
+									"        const response = pm.response.json();\r",
+									"        const packagesData = response.d.results;\r",
+									"        pm.test(\"Response structure is valid and contains packages\", () => {\r",
+									"            pm.expect(packagesData).to.be.an('array').and.to.not.be.empty;\r",
+									"        });\r",
+									"\r",
+									"        const packages = packagesData.map(pkg => ({ Id: pkg.Id, Name: pkg.Name }));\r",
+									"\r",
+									"        // --- Summary Variables Initialization ---\r",
+									"        if (logging) console.log(\"Initializing summary and loop variables...\");\r",
+									"        pm.collectionVariables.set(\"TotalPackageCount\", packages.length);\r",
+									"        pm.collectionVariables.set(\"PackageList\", JSON.stringify(packages, null, 2));\r",
+									"        \r",
+									"        const packageCsvHeader = \"PackageName,PackageID\";\r",
+									"        const packageCsvRows = packages.map(pkg => `\"${pkg.Name}\",\"${pkg.Id}\"`);\r",
+									"        pm.collectionVariables.set(\"PackageCsvList\", packageCsvHeader + \"\\n\" + packageCsvRows.join(\"\\n\"));\r",
+									"        pm.collectionVariables.set(\"IflowCsvList\", \"PackageName,IflowName\");\r",
+									"        if (logging) console.log(`Summary variables initialized. Total packages found: ${packages.length}`);\r",
+									"\r",
+									"        // --- Loop Control Variables Initialization ---\r",
+									"        pm.collectionVariables.set(\"packages\", JSON.stringify(packages));\r",
+									"        pm.collectionVariables.set(\"packageIndex\", 0);\r",
+									"        pm.collectionVariables.set(\"csvData\", JSON.stringify([]));\r",
+									"\r",
+									"        if (logging) console.log(\"✅ SUCCESS: Setup complete. Starting main loop.\");\r",
+									"        pm.execution.setNextRequest(\"Get all integration flows of a package.\");\r",
+									"\r",
+									"    } catch (e) {\r",
+									"        console.error(\"❌ ERROR: Failed to parse response for API 1. Stopping run.\", e);\r",
+									"        pm.execution.setNextRequest(null);\r",
+									"    }\r",
+									"}\r",
+									"\r",
+									"// --- Prerequisite Check Logic ---\r",
+									"if ((runConfigs || runDownload) && nodeServerBaseUrl) {\r",
+									"    console.log(`Checking Node.js server status at: ${nodeServerBaseUrl}`);\r",
+									"    \r",
+									"    pm.sendRequest({\r",
+									"        url: nodeServerBaseUrl, // Send a GET request to the new '/' health check endpoint\r",
+									"        method: 'GET',\r",
+									"        timeout: 2000 // 2-second timeout\r",
+									"    }, (err, res) => {\r",
+									"        if (err || res.code >= 400) {\r",
+									"            console.error(\"\\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\");\r",
+									"            console.error(\"❌ FATAL ERROR: Node.js server is not running or unreachable.\");\r",
+									"            console.error(`Attempted to reach: ${nodeServerBaseUrl}`);\r",
+									"            console.error(\"Please start your local Node.js server and try again.\");\r",
+									"            console.error(\"Stopping collection run.\");\r",
+									"            console.error(\"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\\n\");\r",
+									"            pm.execution.setNextRequest(null); // Stop the entire collection run\r",
+									"        } else {\r",
+									"            console.log(\"✅ Node.js server is running.\");\r",
+									"            mainScriptLogic(); // Server is up, proceed with the script\r",
+									"        }\r",
+									"    });\r",
+									"} else {\r",
+									"    if (logging) console.log(\"Skipping Node.js server check (not required by config).\");\r",
+									"    mainScriptLogic();\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/IntegrationPackages",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"IntegrationPackages"
+							],
+							"query": [
+								{
+									"key": "Author",
+									"value": "string",
+									"description": "Custom Tag property defined in the tenant settings. You can provide multiple values.<br>\nExample1: ```Author=Fred```\nExample2: ```Author=Fred|John```",
+									"disabled": true
+								},
+								{
+									"key": "LoB",
+									"value": "string",
+									"description": "Custom Tag property defined in the tenant settings. You can provide multiple values.<br>\nExample1: ```LoB=Sales```\nExample2: ```LoB=Sales|Marketing```",
+									"disabled": true
+								},
+								{
+									"key": "$skip",
+									"value": "9155",
+									"description": "Skip the first n items.",
+									"disabled": true
+								},
+								{
+									"key": "$top",
+									"value": "1",
+									"disabled": true
+								}
+							]
+						},
+						"description": "You can use the following request to get all integration packages."
+					},
+					"response": []
+				},
+				{
+					"name": "Get all integration flows of a package.",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR API 2: PRE-REQUEST ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"const packages = JSON.parse(pm.collectionVariables.get(\"packages\"));\r",
+									"const packageIndex = parseInt(pm.collectionVariables.get(\"packageIndex\"));\r",
+									"const currentPackage = packages[packageIndex];\r",
+									"\r",
+									"pm.collectionVariables.set(\"currentPackageId\", currentPackage.Id);\r",
+									"pm.collectionVariables.set(\"currentPackageName\", currentPackage.Name);\r",
+									"\r",
+									"if (logging) {\r",
+									"    console.log(`\\n--------------------------------------------------`);\r",
+									"    console.log(`📦 Processing Package ${packageIndex + 1} of ${packages.length}: ${currentPackage.Name}`);\r",
+									"    console.log(`--------------------------------------------------`);\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR API 2: TESTS ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"pm.test(\"Status code is 200 OK\", () => pm.response.to.have.status(200));\r",
+									"pm.test(\"Response contains a valid array for results\", () => {\r",
+									"    pm.expect(pm.response.json().d.results).to.be.an('array');\r",
+									"});\r",
+									"\r",
+									"const iFlowsData = pm.response.json().d.results;\r",
+									"\r",
+									"if (iFlowsData && iFlowsData.length > 0) {\r",
+									"    const iFlows = iFlowsData.map(flow => ({ Id: flow.Id, Name: flow.Name }));\r",
+									"\r",
+									"    // --- Update Summary Variables ---\r",
+									"    let totalIflows = parseInt(pm.collectionVariables.get(\"TotalIflowCount\")) || 0;\r",
+									"    totalIflows += iFlows.length;\r",
+									"    pm.collectionVariables.set(\"TotalIflowCount\", totalIflows);\r",
+									"\r",
+									"    let iflowListByPackage = JSON.parse(pm.collectionVariables.get(\"IflowList\")) || {};\r",
+									"    const currentPackageId = pm.collectionVariables.get(\"currentPackageId\");\r",
+									"    iflowListByPackage[currentPackageId] = iFlows;\r",
+									"    pm.collectionVariables.set(\"IflowList\", JSON.stringify(iflowListByPackage, null, 2));\r",
+									"    \r",
+									"    const currentPackageName = pm.collectionVariables.get(\"currentPackageName\");\r",
+									"    let iflowCsv = pm.collectionVariables.get(\"IflowCsvList\");\r",
+									"    const iflowCsvRows = iFlows.map(flow => `\"${currentPackageName}\",\"${flow.Name}\"`);\r",
+									"    iflowCsv += \"\\n\" + iflowCsvRows.join(\"\\n\");\r",
+									"    pm.collectionVariables.set(\"IflowCsvList\", iflowCsv);\r",
+									"    if (logging) console.log(`Found ${iFlows.length} iFlows. Total iFlow count is now: ${totalIflows}`);\r",
+									"\r",
+									"    // --- Loop Control ---\r",
+									"    pm.collectionVariables.set(\"iFlows\", JSON.stringify(iFlows));\r",
+									"    pm.collectionVariables.set(\"iFlowIndex\", 0);\r",
+									"    \r",
+									"    if (pm.collectionVariables.get(\"runGetConfigurations\") === \"true\") {\r",
+									"        pm.execution.setNextRequest(\"Get configurations of an integration flow by Id and version.\");\r",
+									"    } else {\r",
+									"        pm.execution.setNextRequest(\"Download an integration flow as zip file\");\r",
+									"    }\r",
+									"} else {\r",
+									"    console.warn(\"⚠️ No iFlows found in this package. Checking for more packages...\");\r",
+									"    \r",
+									"    const packages = JSON.parse(pm.collectionVariables.get(\"packages\"));\r",
+									"    let packageIndex = parseInt(pm.collectionVariables.get(\"packageIndex\")) + 1;\r",
+									"    pm.collectionVariables.set(\"packageIndex\", packageIndex);\r",
+									"\r",
+									"    if (packageIndex < packages.length) {\r",
+									"        pm.execution.setNextRequest(\"Get all integration flows of a package.\");\r",
+									"    } else {\r",
+									"        // --- 🎉 RUN COMPLETE & CLEANUP ---\r",
+									"        console.log(\"\\n--------------------------------------------------\");\r",
+									"        console.log(\"🏁 RUN COMPLETE: All packages processed (last was empty). Finalizing...\");\r",
+									"        \r",
+									"        const finalData = JSON.parse(pm.collectionVariables.get(\"csvData\"));\r",
+									"        if(finalData && finalData.length > 0) {\r",
+									"            const header = Object.keys(finalData[0]).join(\",\") + \"\\n\";\r",
+									"            const csvRows = finalData.map(row => Object.values(row).map(val => `\"${String(val).replace(/\"/g, '\"\"')}\"`).join(\",\"));\r",
+									"            const csvContent = header + csvRows.join(\"\\n\");\r",
+									"            pm.collectionVariables.set(\"parametersCsvOutput\", csvContent);\r",
+									"            console.log(\"✅ Main parameters CSV output is ready.\");\r",
+									"\r",
+									"            // --- Send parametersCsvOutput to Node.js server ---\r",
+									"            const nodeServerUrl = pm.collectionVariables.get(\"nodeServerUrl\");\r",
+									"            if (nodeServerUrl && pm.collectionVariables.get(\"runGetConfigurations\") === \"true\") {\r",
+									"                if (logging) console.log(\"Sending parameters CSV to Node.js server...\");\r",
+									"                pm.sendRequest({\r",
+									"                    url: `${nodeServerUrl}/save-file`,\r",
+									"                    method: 'POST',\r",
+									"                    header: {\r",
+									"                        'Content-Type': 'text/plain',\r",
+									"                        'X-File-Name': 'parameters_output.csv',\r",
+									"                        'X-File-Type': 'text'\r",
+									"                    },\r",
+									"                    body: csvContent\r",
+									"                }, (err, res) => {\r",
+									"                    if (err || res.code >= 400) console.error(\"❌ ERROR: Failed to send parameters CSV to Node.js server.\", err || res.text());\r",
+									"                    else if (logging) console.log(\"✅ Successfully sent parameters_output.csv to server.\");\r",
+									"                });\r",
+									"            }\r",
+									"        } else { console.warn(\"⚠️ No data was collected for the parameters CSV file.\"); }\r",
+									"\r",
+									"        if (logging) console.log(\"Cleaning up temporary loop variables...\");\r",
+									"        const varsToClean = [\"packageIndex\", \"csvData\", \"currentPackageId\", \"currentPackageName\", \"iFlowIndex\", \"currentIFlowId\", \"currentIFlowName\", \"packages\", \"iFlows\"];\r",
+									"        varsToClean.forEach(varName => pm.collectionVariables.unset(varName));\r",
+									"        if (logging) console.log(\"✅ Cleanup complete. Summary variables have been retained.\");\r",
+									"        \r",
+									"        pm.execution.setNextRequest(null);\r",
+									"    }\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/IntegrationPackages('{{currentPackageId}}')/IntegrationDesigntimeArtifacts",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"IntegrationPackages('{{currentPackageId}}')",
+								"IntegrationDesigntimeArtifacts"
+							],
+							"query": [
+								{
+									"key": "$select",
+									"value": "Id,Name",
+									"disabled": true
+								}
+							]
+						},
+						"description": "You can use the following request to get all integration flows of an integration package by package Id."
+					},
+					"response": []
+				},
+				{
+					"name": "Get configurations of an integration flow by Id and version.",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR API 3: PRE-REQUEST ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"const iFlows = JSON.parse(pm.collectionVariables.get(\"iFlows\"));\r",
+									"const iFlowIndex = parseInt(pm.collectionVariables.get(\"iFlowIndex\"));\r",
+									"const currentIFlow = iFlows[iFlowIndex];\r",
+									"\r",
+									"pm.collectionVariables.set(\"currentIFlowId\", currentIFlow.Id);\r",
+									"pm.collectionVariables.set(\"currentIFlowName\", currentIFlow.Name);\r",
+									"\r",
+									"if (logging) {\r",
+									"    console.log(`\\n  ⚙️ [API 3] Getting Configs for iFlow ${iFlowIndex + 1} of ${iFlows.length}: ${currentIFlow.Name}`);\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR API 3: TESTS ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"pm.test(\"Status code is 200 OK\", () => pm.response.to.have.status(200));\r",
+									"pm.test(\"Response contains a valid array for results\", () => {\r",
+									"    pm.expect(pm.response.json().d.results).to.be.an('array');\r",
+									"});\r",
+									"\r",
+									"const configs = pm.response.json().d.results;\r",
+									"const csvData = JSON.parse(pm.collectionVariables.get(\"csvData\"));\r",
+									"\r",
+									"const newRowBase = {\r",
+									"    PackageName: pm.collectionVariables.get(\"currentPackageName\"),\r",
+									"    PackageID: pm.collectionVariables.get(\"currentPackageId\"),\r",
+									"    IflowName: pm.collectionVariables.get(\"currentIFlowName\"),\r",
+									"    IflowID: pm.collectionVariables.get(\"currentIFlowId\")\r",
+									"};\r",
+									"\r",
+									"if (configs && configs.length > 0) {\r",
+									"    configs.forEach(config => {\r",
+									"        csvData.push({ ...newRowBase, ...{\r",
+									"            ParameterKey: config.ParameterKey,\r",
+									"            ParameterValue: config.ParameterValue,\r",
+									"            DataType: config.DataType\r",
+									"        }});\r",
+									"    });\r",
+									"    if (logging) console.log(`     Added ${configs.length} configuration parameters to main CSV data.`);\r",
+									"} else {\r",
+									"    csvData.push({ ...newRowBase, ...{ ParameterKey: \"\", ParameterValue: \"\", DataType: \"\" } });\r",
+									"    if (logging) console.log(\"     No configuration parameters found. Added a blank entry to main CSV data.\");\r",
+									"}\r",
+									"\r",
+									"pm.collectionVariables.set(\"csvData\", JSON.stringify(csvData));\r",
+									"pm.execution.setNextRequest(\"Download an integration flow as zip file\");"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/IntegrationDesigntimeArtifacts(Id='{{currentIFlowId}}',Version='{{Version}}')/Configurations",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"IntegrationDesigntimeArtifacts(Id='{{currentIFlowId}}',Version='{{Version}}')",
+								"Configurations"
+							],
+							"query": [
+								{
+									"key": "$filter",
+									"value": "string",
+									"description": "Returns a subset of the entries, which matches the filter condition.<br>\nSupported operators: ```eq``` and ```ne```<br>\nSupported string functions: ```substringof```, ```startswith``` and ```endswith```.<br>\nExample: ```substringof('Receiver_',ParameterKey) eq true```",
+									"disabled": true
+								},
+								{
+									"key": "$select",
+									"value": "Description,ParameterValue",
+									"description": "Select properties to be returned.",
+									"disabled": true
+								},
+								{
+									"key": "$orderby",
+									"value": "ParameterKey desc,ParameterKey",
+									"description": "Order items by property values.",
+									"disabled": true
+								},
+								{
+									"key": "$format",
+									"value": "json",
+									"description": "Response format can be JSON or XML.",
+									"disabled": true
+								}
+							]
+						},
+						"description": "You can use the following request to get the configuration parameters (key/value pairs) of an integration artifact by Id and version.<br>For further details, refer to the SAP Help Portal documentation [OData API: Integration Content](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html) and to the following SAP Community blog [Remote OData APIs for Integration Flows](https://blogs.sap.com/2018/07/06/cloud-integration-remote-odata-apis-for-integration-flows/).<br>\nIn API sandbox, the following integration flow contains configuration parameters: '__IntegrationFlowWithConfiguration__' with version '__1.0.5__'"
+					},
+					"response": []
+				},
+				{
+					"name": "Download an integration flow as zip file",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR API 4: TESTS & MASTER LOOP CONTROLLER ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"// Part 1: Conditional File Download\r",
+									"if (pm.collectionVariables.get(\"runDownloadFlow\") === \"true\") {\r",
+									"    if (logging) console.log(`\\n  💾 [API 4] Downloading binary for iFlow: ${pm.collectionVariables.get(\"currentIFlowName\")}`);\r",
+									"    pm.test(\"Download Successful (Status code is 200)\", () => pm.response.to.have.status(200));\r",
+									"\r",
+									"    const fileName = `${pm.collectionVariables.get(\"currentIFlowId\")}.zip`;\r",
+									"    const base64Body = Buffer.from(pm.response.stream).toString('base64');\r",
+									"    const nodeServerUrl = pm.collectionVariables.get(\"nodeServerUrl\");\r",
+									"\r",
+									"    if (base64Body && base64Body.length > 100 && nodeServerUrl) {\r",
+									"        pm.sendRequest({\r",
+									"            url: `${nodeServerUrl}/save-file`,\r",
+									"            method: 'POST',\r",
+									"            header: {\r",
+									"                'Content-Type': 'text/plain',\r",
+									"                'X-File-Name': fileName,\r",
+									"                'X-File-Type': 'binary'\r",
+									"            },\r",
+									"            body: base64Body\r",
+									"        }, (err, res) => {\r",
+									"            pm.test(\"Local server save request was sent successfully\", () => {\r",
+									"                pm.expect(err).to.be.null;\r",
+									"                pm.expect(res).to.have.property('code', 200);\r",
+									"            });\r",
+									"            if (err) console.error(`     ❌ ERROR sending to local server:`, err);\r",
+									"            else if (logging) console.log(`     ✔️ Successfully sent ${fileName} to local server.`);\r",
+									"        });\r",
+									"    } else if (!nodeServerUrl) {\r",
+									"        console.warn(`     ⚠️ WARNING: 'nodeServerUrl' collection variable is not set. Skipping save.`);\r",
+									"    } else {\r",
+									"        console.warn(`     ⚠️ WARNING: Binary stream for ${fileName} is empty. Skipping save.`);\r",
+									"    }\r",
+									"} else {\r",
+									"    if (logging) console.log(`\\n  ⏭️  [API 4] SKIPPING binary download.`);\r",
+									"}\r",
+									"\r",
+									"// Part 2: Master Loop Controller\r",
+									"const iFlows = JSON.parse(pm.collectionVariables.get(\"iFlows\") || \"[]\");\r",
+									"let iFlowIndex = parseInt(pm.collectionVariables.get(\"iFlowIndex\") || \"0\") + 1;\r",
+									"pm.collectionVariables.set(\"iFlowIndex\", iFlowIndex);\r",
+									"\r",
+									"if (iFlows && iFlowIndex < iFlows.length) {\r",
+									"    if (pm.collectionVariables.get(\"runGetConfigurations\") === \"true\") {\r",
+									"        pm.execution.setNextRequest(\"Get configurations of an integration flow by Id and version.\");\r",
+									"    } else {\r",
+									"        pm.execution.setNextRequest(\"Download an integration flow as zip file\");\r",
+									"    }\r",
+									"} else {\r",
+									"    if (logging) console.log(`\\nFinished all iFlows for package: ${pm.collectionVariables.get(\"currentPackageName\")}.`);\r",
+									"    const packages = JSON.parse(pm.collectionVariables.get(\"packages\"));\r",
+									"    let packageIndex = parseInt(pm.collectionVariables.get(\"packageIndex\")) + 1;\r",
+									"    pm.collectionVariables.set(\"packageIndex\", packageIndex);\r",
+									"\r",
+									"    if (packageIndex < packages.length) {\r",
+									"        pm.execution.setNextRequest(\"Get all integration flows of a package.\");\r",
+									"    } else {\r",
+									"        // --- 🎉 RUN COMPLETE & CLEANUP ---\r",
+									"        console.log(\"\\n--------------------------------------------------\");\r",
+									"        console.log(\"🏁 RUN COMPLETE: All packages processed. Finalizing...\");\r",
+									"        \r",
+									"        const finalData = JSON.parse(pm.collectionVariables.get(\"csvData\"));\r",
+									"        if(finalData && finalData.length > 0) {\r",
+									"            const header = Object.keys(finalData[0]).join(\",\") + \"\\n\";\r",
+									"            const csvRows = finalData.map(row => Object.values(row).map(val => `\"${String(val).replace(/\"/g, '\"\"')}\"`).join(\",\"));\r",
+									"            const csvContent = header + csvRows.join(\"\\n\");\r",
+									"            pm.collectionVariables.set(\"parametersCsvOutput\", csvContent);\r",
+									"            console.log(\"✅ Main parameters CSV output is ready.\");\r",
+									"\r",
+									"            // --- Send parametersCsvOutput to Node.js server ---\r",
+									"            const nodeServerUrl = pm.collectionVariables.get(\"nodeServerUrl\");\r",
+									"            if (nodeServerUrl && pm.collectionVariables.get(\"runGetConfigurations\") === \"true\") {\r",
+									"                if (logging) console.log(\"Sending parameters CSV to Node.js server...\");\r",
+									"                pm.sendRequest({\r",
+									"                    url: `${nodeServerUrl}/save-file`,\r",
+									"                    method: 'POST',\r",
+									"                    header: {\r",
+									"                        'Content-Type': 'text/plain',\r",
+									"                        'X-File-Name': 'parameters_output.csv',\r",
+									"                        'X-File-Type': 'text'\r",
+									"                    },\r",
+									"                    body: csvContent\r",
+									"                }, (err, res) => {\r",
+									"                    if (err || res.code >= 400) console.error(\"❌ ERROR: Failed to send parameters CSV to Node.js server.\", err || res.text());\r",
+									"                    else if (logging) console.log(\"✅ Successfully sent parameters_output.csv to server.\");\r",
+									"                });\r",
+									"            }\r",
+									"        } else { console.warn(\"⚠️ No data was collected for the parameters CSV file.\"); }\r",
+									"\r",
+									"        if (logging) console.log(\"Cleaning up temporary loop variables...\");\r",
+									"        const varsToClean = [\"packageIndex\", \"csvData\", \"currentPackageId\", \"currentPackageName\", \"iFlowIndex\", \"currentIFlowId\", \"currentIFlowName\", \"packages\", \"iFlows\"];\r",
+									"        varsToClean.forEach(varName => pm.collectionVariables.unset(varName));\r",
+									"        if (logging) console.log(\"✅ Cleanup complete. Summary variables have been retained.\");\r",
+									"        \r",
+									"        pm.execution.setNextRequest(null);\r",
+									"    }\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR API 4: PRE-REQUEST (SAFER) ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"const iFlows = JSON.parse(pm.collectionVariables.get(\"iFlows\") || \"[]\");\r",
+									"const iFlowIndex = parseInt(pm.collectionVariables.get(\"iFlowIndex\") || \"0\");\r",
+									"\r",
+									"if (iFlows && iFlowIndex < iFlows.length) {\r",
+									"    const currentIFlow = iFlows[iFlowIndex];\r",
+									"    pm.collectionVariables.set(\"currentIFlowId\", currentIFlow.Id);\r",
+									"    pm.collectionVariables.set(\"currentIFlowName\", currentIFlow.Name);\r",
+									"} else {\r",
+									"    pm.collectionVariables.set(\"currentIFFId\", null);\r",
+									"    pm.collectionVariables.set(\"currentIFlowName\", null);\r",
+									"    if (logging) console.warn(\"API 4 Pre-request: No valid iFlow found to process.\");\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/zip"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/IntegrationDesigntimeArtifacts(Id='{{currentIFlowId}}',Version='{{Version}}')/$value",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"IntegrationDesigntimeArtifacts(Id='{{currentIFlowId}}',Version='{{Version}}')",
+								"$value"
+							]
+						},
+						"description": "You can use the following request to download an integration flow as zip file. Integration flows of configure-only packages cannot be downloaded.<br>For further details, refer to the SAP Help Portal documentation [OData API: Integration Content](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html) and to the following SAP Community blog [Remote OData APIs for Integration Flows](https://blogs.sap.com/2018/07/06/cloud-integration-remote-odata-apis-for-integration-flows/).<br>\nIn API sandbox the following integration flows with Id and version are available:\n* '__IntegrationFlow_FAILED_DEPLOYMENT__' with version '__1.0.0__' \n* '__IntegrationFlow_MessageStore_COMPLETED_PROCESSING__' with version '__1.0.0__'\n* '__IntegrationFlow_AdapterData_FAILED_PROCESSING__' with version '__1.0.0__'\n* '__IntegrationFlowWithConfiguration__' with version '__1.0.5__'"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "1.1 - Get Specific Integration Content",
+			"item": [
+				{
+					"name": "Logic: Specific Package Iteration",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR \"[Logic] Workflow Router\" TESTS ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"// Use pm.iterationData.size to determine if a data file is attached\r",
+									"const isRunnerIteration = pm.iterationData && pm.iterationData.size > 0;\r",
+									"\r",
+									"// This router handles two jobs: Setup (iteration 0) and Loop Control (subsequent calls)\r",
+									"if (pm.info.iteration === 0 && !pm.collectionVariables.get(\"specificPackageIDs\")) {\r",
+									"    // --- 1. SETUP/INITIALIZATION ---\r",
+									"    if (logging) console.log(\"--- First Call: Running Setup for Specific Content Fetch ---\");\r",
+									"\r",
+									"    const inputListString = pm.collectionVariables.get(\"specificPackageIDsList\");\r",
+									"    if (!inputListString || inputListString.trim() === '') {\r",
+									"        const errorMsg = \"FATAL ERROR: 'specificPackageIDsList' collection variable is empty or not set. Set it to a comma-separated list of IDs.\";\r",
+									"        console.error(`🔥 ${errorMsg}`);\r",
+									"        pm.collectionVariables.set(\"nodeServerStatus\", `RUN CANCELED: ${errorMsg}`);\r",
+									"        pm.execution.setNextRequest(null);\r",
+									"        return;\r",
+									"    }\r",
+									"    \r",
+									"    const packageIDs = inputListString.split(',').map(id => id.trim()).filter(id => id.length > 0);\r",
+									"    if (logging) console.log(`Found ${packageIDs.length} Package IDs to process.`);\r",
+									"    \r",
+									"    // Initialize loop variables\r",
+									"    pm.collectionVariables.set(\"specificPackageIDs\", JSON.stringify(packageIDs));\r",
+									"    pm.collectionVariables.set(\"packageIndex\", 0);\r",
+									"    pm.collectionVariables.set(\"specificCsvData\", JSON.stringify([])); \r",
+									"\r",
+									"    // Initialize CSV Headers\r",
+									"    const headers = [\"PackageName\", \"PackageID\", \"IflowName\", \"IflowID\", \"ParameterKey\", \"ParameterValue\", \"DataType\"];\r",
+									"    pm.collectionVariables.set(\"specificParametersCsvOutput\", headers.join(',') + '\\n');\r",
+									"    \r",
+									"    // Clear Old Tokens\r",
+									"    pm.collectionVariables.unset(\"accessToken\");\r",
+									"    \r",
+									"    pm.execution.setNextRequest(\"Get Auth Token (Specific Content)\");\r",
+									"\r",
+									"} else {\r",
+									"    // --- 2. LOOP CONTROL --- (Runs after every package completes)\r",
+									"    \r",
+									"    const packageIDs = JSON.parse(pm.collectionVariables.get(\"specificPackageIDs\") || \"[]\");\r",
+									"    let packageIndex = parseInt(pm.collectionVariables.get(\"packageIndex\") || \"0\");\r",
+									"\r",
+									"    if (packageIndex < packageIDs.length) {\r",
+									"        // We have more packages to process\r",
+									"        if (logging) console.log(`Router: Continuing to next Package at index ${packageIndex}`);\r",
+									"        pm.execution.setNextRequest(\"Get Package Details by ID\");\r",
+									"    } else {\r",
+									"        // All packages finished. Finalize the run.\r",
+									"        console.log(\"--------------------------------------------------\");\r",
+									"        console.log(\"🏁 RUN COMPLETE: All specific packages processed. Finalizing...\");\r",
+									"        \r",
+									"        // Finalize CSV Report\r",
+									"        const finalData = JSON.parse(pm.collectionVariables.get(\"specificCsvData\"));\r",
+									"        if(finalData && finalData.length > 0) {\r",
+									"            const header = Object.keys(finalData[0]).join(\",\") + \"\\n\";\r",
+									"            const csvRows = finalData.map(row => Object.values(row).map(val => `\"${String(val).replace(/\"/g, '\"\"')}\"`).join(\",\"));\r",
+									"            const csvContent = header + csvRows.join(\"\\n\");\r",
+									"            \r",
+									"            pm.collectionVariables.set(\"specificParametersCsvOutput\", csvContent);\r",
+									"            console.log(\"✅ Specific parameters CSV output is ready in 'specificParametersCsvOutput'.\");\r",
+									"            \r",
+									"            // Cleanup temporary variables\r",
+									"            const varsToClean = [\"specificCsvData\", \"currentPackageId\", \"currentPackageName\", \"iFlowIndex\", \"currentIFlowId\", \"currentIFlowName\", \"iFlows\", \"packageIndex\", \"specificPackageIDs\"];\r",
+									"            varsToClean.forEach(varName => pm.collectionVariables.unset(varName));\r",
+									"            if (logging) console.log(\"✅ Cleanup complete.\");\r",
+									"        }\r",
+									"        pm.execution.setNextRequest(null); // Stop the run\r",
+									"    }\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://postman-echo.com/get?iteration={{pm.info.iteration}}",
+							"protocol": "https",
+							"host": [
+								"postman-echo",
+								"com"
+							],
+							"path": [
+								"get"
+							],
+							"query": [
+								{
+									"key": "iteration",
+									"value": "{{pm.info.iteration}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Auth Token (Specific Content)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR \"1. Get Token\" TESTS ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"pm.test(\"Status code is 200 OK\", () => pm.response.to.have.status(200));\r",
+									"\r",
+									"try {\r",
+									"    const response = pm.response.json();\r",
+									"    const rawToken = response.access_token; \r",
+									"\r",
+									"    if (rawToken) {\r",
+									"        pm.collectionVariables.set(\"accessToken\", rawToken);\r",
+									"        if (logging) console.log(\"New raw token saved to 'accessToken'.\");\r",
+									"        // Next step is to get details for the first package ID\r",
+									"        pm.execution.setNextRequest(\"Get Package Details by ID\");\r",
+									"    } else {\r",
+									"        console.error(\"Could not find a valid token. Stopping run.\");\r",
+									"        pm.execution.setNextRequest(null);\r",
+									"    }\r",
+									"} catch (e) {\r",
+									"    console.error(\"Failed to parse token response:\", e);\r",
+									"    pm.execution.setNextRequest(null);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{ClientSecret}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{ClientID}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "client_credentials",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{TokenUrl}}",
+							"host": [
+								"{{TokenUrl}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Package Details by ID",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR API (Specific) 2: PRE-REQUEST ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"const packageIDs = JSON.parse(pm.collectionVariables.get(\"specificPackageIDs\"));\r",
+									"const packageIndex = parseInt(pm.collectionVariables.get(\"packageIndex\"));\r",
+									"const currentPackageId = packageIDs[packageIndex];\r",
+									"\r",
+									"pm.collectionVariables.set(\"currentPackageId\", currentPackageId);\r",
+									"\r",
+									"if (logging) {\r",
+									"    console.log(`\\n--------------------------------------------------`);\r",
+									"    console.log(`📦 Processing Package ${packageIndex + 1} of ${packageIDs.length}: ID ${currentPackageId}`);\r",
+									"    console.log(`--------------------------------------------------`);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR API (Specific) 2: TESTS ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"const currentPackageId = pm.collectionVariables.get(\"currentPackageId\");\r",
+									"\r",
+									"let responseCode = pm.response.code;\r",
+									"pm.test(\"Status code is 200 OK\", () => pm.expect(responseCode).to.equal(200));\r",
+									"\r",
+									"if (responseCode !== 200) {\r",
+									"    console.error(`❌ ERROR: API request for Package ID ${currentPackageId} failed with status code ${responseCode}. Skipping...`);\r",
+									"    \r",
+									"    pm.collectionVariables.set(\"currentPackageName\", `ERROR: Status ${responseCode}`);\r",
+									"\r",
+									"    const csvData = JSON.parse(pm.collectionVariables.get(\"specificCsvData\"));\r",
+									"    csvData.push({\r",
+									"        PackageName: pm.collectionVariables.get(\"currentPackageName\"),\r",
+									"        PackageID: currentPackageId,\r",
+									"        IflowName: `PACKAGE_FETCH_FAILED (Status ${responseCode})`,\r",
+									"        IflowID: \"\",\r",
+									"        ParameterKey: \"\",\r",
+									"        ParameterValue: \"\",\r",
+									"        DataType: \"\"\r",
+									"    });\r",
+									"    pm.collectionVariables.set(\"specificCsvData\", JSON.stringify(csvData));\r",
+									"    \r",
+									"    // Increment package index and route to router to check for next package (CRITICAL FIX)\r",
+									"    let packageIndex = parseInt(pm.collectionVariables.get(\"packageIndex\")) + 1;\r",
+									"    pm.collectionVariables.set(\"packageIndex\", packageIndex);\r",
+									"    pm.execution.setNextRequest(\"Logic: Specific Package Iteration\");\r",
+									"\r",
+									"} else {\r",
+									"    // Status code is 200, proceed with JSON parsing\r",
+									"    try {\r",
+									"        const response = pm.response.json();\r",
+									"        const packageData = response.d;\r",
+									"        \r",
+									"        if (!packageData || !packageData.Name) {\r",
+									"             throw new Error(\"Missing 'd' or 'Name' property in 200 OK response.\");\r",
+									"        }\r",
+									"\r",
+									"        pm.test(\"Package details found\", () => pm.expect(packageData.Id).to.equal(currentPackageId));\r",
+									"\r",
+									"        pm.collectionVariables.set(\"currentPackageName\", packageData.Name);\r",
+									"        \r",
+									"        if (logging) console.log(`✅ Package Name: ${packageData.Name}`);\r",
+									"        \r",
+									"        pm.execution.setNextRequest(\"Get all integration flows of a specific package.\");\r",
+									"\r",
+									"    } catch (e) {\r",
+									"        // Handle JSON parsing error or structure error\r",
+									"        console.error(`❌ ERROR: Could not parse response or invalid structure for Package ID ${currentPackageId}. Skipping...`, e);\r",
+									"        pm.collectionVariables.set(\"currentPackageName\", `ERROR: Parsing failed`);\r",
+									"        \r",
+									"        const csvData = JSON.parse(pm.collectionVariables.get(\"specificCsvData\"));\r",
+									"        csvData.push({\r",
+									"            PackageName: pm.collectionVariables.get(\"currentPackageName\") || `ERROR: ${currentPackageId}`,\r",
+									"            PackageID: currentPackageId,\r",
+									"            IflowName: \"PACKAGE_PARSE_ERROR\",\r",
+									"            IflowID: \"\",\r",
+									"            ParameterKey: \"\",\r",
+									"            ParameterValue: \"\",\r",
+									"            DataType: \"\"\r",
+									"        });\r",
+									"        pm.collectionVariables.set(\"specificCsvData\", JSON.stringify(csvData));\r",
+									"        \r",
+									"        // Increment package index and route to router to check for next package (CRITICAL FIX)\r",
+									"        let packageIndex = parseInt(pm.collectionVariables.get(\"packageIndex\")) + 1;\r",
+									"        pm.collectionVariables.set(\"packageIndex\", packageIndex);\r",
+									"        pm.execution.setNextRequest(\"Logic: Specific Package Iteration\");\r",
+									"    }\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/IntegrationPackages('{{currentPackageId}}')",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"IntegrationPackages('{{currentPackageId}}')"
+							]
+						},
+						"description": "Fetches the package name based on the Package ID currently being processed from the list. $select removed to comply with API constraints."
+					},
+					"response": []
+				},
+				{
+					"name": "Get all integration flows of a specific package.",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR API (Specific) 3: PRE-REQUEST ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"if (logging) {\r",
+									"    console.log(`\r\n    ➡️ Fetching iFlows for Package: ${pm.collectionVariables.get(\"currentPackageName\")}`);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR API (Specific) 3: TESTS ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"pm.test(\"Status code is 200 OK\", () => pm.response.to.have.status(200));\r",
+									"\r",
+									"const iFlowsData = pm.response.json().d.results;\r",
+									"\r",
+									"if (iFlowsData && iFlowsData.length > 0) {\r",
+									"    const iFlows = iFlowsData.map(flow => ({ Id: flow.Id, Name: flow.Name }));\r",
+									"    pm.test(`Found ${iFlows.length} iFlows for package`, () => pm.expect(iFlows.length).to.be.at.least(1));\r",
+									"\r",
+									"    // --- Loop Control Setup ---\r",
+									"    pm.collectionVariables.set(\"iFlows\", JSON.stringify(iFlows));\r",
+									"    pm.collectionVariables.set(\"iFlowIndex\", 0);\r",
+									"    \r",
+									"    pm.execution.setNextRequest(\"Get configurations of a specific integration flow.\");\r",
+									"\r",
+									"} else {\r",
+									"    console.warn(`⚠️ No iFlows found in package ${pm.collectionVariables.get(\"currentPackageName\")}. Skipping to next package...`);\r",
+									"    \r",
+									"    // Log the 'No iFlows' entry to the CSV data\r",
+									"    const csvData = JSON.parse(pm.collectionVariables.get(\"specificCsvData\"));\r",
+									"    csvData.push({\r",
+									"        PackageName: pm.collectionVariables.get(\"currentPackageName\"),\r",
+									"        PackageID: pm.collectionVariables.get(\"currentPackageId\"),\r",
+									"        IflowName: \"NO_IFLOWS_FOUND\",\r",
+									"        IflowID: \"\",\r",
+									"        ParameterKey: \"\",\r",
+									"        ParameterValue: \"\",\r",
+									"        DataType: \"\"\r",
+									"    });\r",
+									"    pm.collectionVariables.set(\"specificCsvData\", JSON.stringify(csvData));\r",
+									"    \r",
+									"    // Increment package index and loop back to the main router\r",
+									"    let packageIndex = parseInt(pm.collectionVariables.get(\"packageIndex\")) + 1;\r",
+									"    pm.collectionVariables.set(\"packageIndex\", packageIndex);\r",
+									"    pm.execution.setNextRequest(\"Logic: Specific Package Iteration\");\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/IntegrationPackages('{{currentPackageId}}')/IntegrationDesigntimeArtifacts",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"IntegrationPackages('{{currentPackageId}}')",
+								"IntegrationDesigntimeArtifacts"
+							]
+						},
+						"description": "Gets all integration flows of the package ID currently stored in 'currentPackageId'. $select removed to comply with API constraints."
+					},
+					"response": []
+				},
+				{
+					"name": "Get configurations of a specific integration flow.",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR API (Specific) 4: PRE-REQUEST ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"const iFlows = JSON.parse(pm.collectionVariables.get(\"iFlows\"));\r",
+									"const iFlowIndex = parseInt(pm.collectionVariables.get(\"iFlowIndex\"));\r",
+									"const currentIFlow = iFlows[iFlowIndex];\r",
+									"\r",
+									"pm.collectionVariables.set(\"currentIFlowId\", currentIFlow.Id);\r",
+									"pm.collectionVariables.set(\"currentIFlowName\", currentIFlow.Name);\r",
+									"\r",
+									"if (logging) {\r",
+									"    console.log(`  ⚙️ [API 4] Getting Configs for iFlow ${iFlowIndex + 1} of ${iFlows.length}: ${currentIFlow.Name}`);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR API (Specific) 4: TESTS & LOOP CONTROLLER ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"pm.test(\"Status code is 200 OK\", () => pm.response.to.have.status(200));\r",
+									"\r",
+									"const configs = pm.response.json().d.results;\r",
+									"const csvData = JSON.parse(pm.collectionVariables.get(\"specificCsvData\"));\r",
+									"\r",
+									"// Base data for the current iFlow\r",
+									"const newRowBase = {\r",
+									"    PackageName: pm.collectionVariables.get(\"currentPackageName\"),\r",
+									"    PackageID: pm.collectionVariables.get(\"currentPackageId\"),\r",
+									"    IflowName: pm.collectionVariables.get(\"currentIFlowName\"),\r",
+									"    IflowID: pm.collectionVariables.get(\"currentIFlowId\")\r",
+									"};\r",
+									"\r",
+									"if (configs && configs.length > 0) {\r",
+									"    configs.forEach(config => {\r",
+									"        csvData.push({ ...newRowBase, ...{\r",
+									"            ParameterKey: config.ParameterKey,\r",
+									"            ParameterValue: config.ParameterValue,\r",
+									"            DataType: config.DataType\r",
+									"        }});\r",
+									"    });\r",
+									"    if (logging) console.log(`     Added ${configs.length} configuration parameters to specific CSV data.`);\r",
+									"} else {\r",
+									"    // Add a row even if no configs are found\r",
+									"    csvData.push({ ...newRowBase, ...{ ParameterKey: \"\", ParameterValue: \"\", DataType: \"\" } });\r",
+									"    if (logging) console.log(\"     No configuration parameters found. Added a blank entry to specific CSV data.\");\r",
+									"}\r",
+									"\r",
+									"pm.collectionVariables.set(\"specificCsvData\", JSON.stringify(csvData));\r",
+									"\r",
+									"// --- iFlow Loop Controller ---\r",
+									"const iFlows = JSON.parse(pm.collectionVariables.get(\"iFlows\") || \"[]\");\r",
+									"let iFlowIndex = parseInt(pm.collectionVariables.get(\"iFlowIndex\") || \"0\") + 1;\r",
+									"pm.collectionVariables.set(\"iFlowIndex\", iFlowIndex);\r",
+									"\r",
+									"if (iFlows && iFlowIndex < iFlows.length) {\r",
+									"    // Continue to next iFlow in the current package\r",
+									"    pm.execution.setNextRequest(\"Get configurations of a specific integration flow.\");\r",
+									"} else {\r",
+									"    // Finished all iFlows for the current package. Increment package index and loop back to the main router.\r",
+									"    if (logging) console.log(`Finished all iFlows for package: ${pm.collectionVariables.get(\"currentPackageName\")}.`);\r",
+									"    \r",
+									"    let packageIndex = parseInt(pm.collectionVariables.get(\"packageIndex\")) + 1;\r",
+									"    pm.collectionVariables.set(\"packageIndex\", packageIndex);\r",
+									"    \r",
+									"    // CRITICAL: Route back to the main router request to check if the loop is finished.\r",
+									"    pm.execution.setNextRequest(\"Logic: Specific Package Iteration\");\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/IntegrationDesigntimeArtifacts(Id='{{currentIFlowId}}',Version='{{Version}}')/Configurations",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"IntegrationDesigntimeArtifacts(Id='{{currentIFlowId}}',Version='{{Version}}')",
+								"Configurations"
+							]
+						},
+						"description": "Gets the configuration parameters of an iFlow. $select removed to comply with API constraints."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "02 - Update Iflow Configuration",
+			"item": [
+				{
+					"name": "Iteration Check",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR \"[Logic] Workflow Router\" TESTS ---\r",
+									"\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"// This script now contains ALL setup and routing logic\r",
+									"if (pm.info.iteration === 0) {\r",
+									"    // --- FIRST ITERATION: Run all setup ---\r",
+									"    if (logging) console.log(\"--- First Iteration (0): Running Setup ---\");\r",
+									"\r",
+									"    // 1. Data File Validation Check\r",
+									"    const hasDataFile = pm.iterationData.has(\"PackageName\");\r",
+									"    if (!hasDataFile) {\r",
+									"        const errorMsg = \"FATAL ERROR: No data file loaded or file is invalid.\";\r",
+									"        console.error(`🔥 ${errorMsg}`);\r",
+									"        pm.collectionVariables.set(\"nodeServerStatus\", `RUN CANCELED: ${errorMsg}`);\r",
+									"        throw new Error(errorMsg); // This stops the whole run\r",
+									"    }\r",
+									"    \r",
+									"    if (logging) console.log(\"✅ Data file found. Initializing CSV results.\");\r",
+									"    \r",
+									"    // 2. Initialize CSV Results\r",
+									"    const headers = [\r",
+									"        \"PackageName\", \"PackageID\", \"IflowName\", \"IflowID\",\r",
+									"        \"ParameterKey\", \"ParameterValue\", \"DataType\",\r",
+									"        \"ResponseCode\", \"ResponseMessage\"\r",
+									"    ];\r",
+									"    pm.collectionVariables.set(\"csvResults\", headers.join(',') + '\\n');\r",
+									"    \r",
+									"    // 3. Clear Old Tokens\r",
+									"    if (logging) console.log(\"Clearing old data for new run...\");\r",
+									"    const tokenVariables = [\"accessToken\", \"refreshToken\", \"bearerToken\", \"csrfToken\"];\r",
+									"    tokenVariables.forEach(v => pm.collectionVariables.unset(v));\r",
+									"    if (logging) console.log(\"Cleared old token variables.\");\r",
+									"\r",
+									"    // 4. Clear Cookies (Your existing logic)\r",
+									"    const domainsString = pm.collectionVariables.get(\"cookieDomainsToClear\");\r",
+									"    if (domainsString) {\r",
+									"        const domainsToClear = domainsString.split('|').map(d => d.trim()).filter(d => d.length > 0);\r",
+									"        if (logging) console.log(`Found ${domainsToClear.length} domains to clear cookies for: [${domainsToClear.join(', ')}]`);\r",
+									"        \r",
+									"        let domainsCleared = 0;\r",
+									"        domainsToClear.forEach(domain => {\r",
+									"            pm.cookies.clear(domain, (error) => {\r",
+									"                if (error) console.error(`Error clearing cookies for ${domain}:`, error);\r",
+									"                domainsCleared++;\r",
+									"                if (domainsCleared === domainsToClear.length) {\r",
+									"                    if (logging) console.log(\"✅ Cookie clearing complete.\");\r",
+									"                }\r",
+									"            });\r",
+									"        });\r",
+									"    } else {\r",
+									"        if (logging) console.log(\"No 'cookieDomainsToClear' variable found. Skipping cookie clear.\");\r",
+									"    }\r",
+									"    \r",
+									"    if (logging) console.log(\"--- Setup Complete. Proceeding to Get Auth Token... ---\");\r",
+									"    // Tell the runner to go to the real first request\r",
+									"    pm.execution.setNextRequest(\"Get Auth Token\");\r",
+									"\r",
+									"} else {\r",
+									"    // --- SUBSEQUENT ITERATIONS: Skip to the update step ---\r",
+									"    if (logging) console.log(`--- Iteration ${pm.info.iteration}: Skipping token requests... ---`);\r",
+									"    \r",
+									"    // 💥 THIS IS THE FIX 💥\r",
+									"    // Jump directly to the request that needs to be looped,\r",
+									"    // skipping Auth and CSRF requests entirely.\r",
+									"    pm.execution.setNextRequest(\"Update configuration parameter of an integration flow\");\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://postman-echo.com/get?iteration={{pm.info.iteration}}",
+							"protocol": "https",
+							"host": [
+								"postman-echo",
+								"com"
+							],
+							"path": [
+								"get"
+							],
+							"query": [
+								{
+									"key": "iteration",
+									"value": "{{pm.info.iteration}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Auth Token",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR \"1. Get Token\" TESTS ---\r",
+									"// (Logic simplified, 'if iteration' block removed)\r",
+									"\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"if (logging) console.log(\"Token request finished (Iteration 0). Processing response...\");\r",
+									"\r",
+									"// --- Test Case 1: Check for successful request ---\r",
+									"pm.test(\"Status code is 200 OK\", () => {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"// ... (your other tests) ...\r",
+									"try {\r",
+									"    const response = pm.response.json();\r",
+									"    const rawToken = response.access_token; \r",
+									"\r",
+									"    pm.test(\"Access token is present\", () => pm.expect(rawToken).to.exist);\r",
+									"\r",
+									"    if (rawToken) {\r",
+									"        pm.collectionVariables.set(\"accessToken\", rawToken);\r",
+									"        if (logging) console.log(\"New raw token saved to 'accessToken' variable.\");\r",
+									"\r",
+									"        // Just tell it to go to the next step\r",
+									"        pm.execution.setNextRequest(\"Get CSRF token\");\r",
+									"\r",
+									"    } else {\r",
+									"        console.error(\"Could not find a valid token in response body. Stopping run.\");\r",
+									"        pm.execution.setNextRequest(null);\r",
+									"    }\r",
+									"\r",
+									"} catch (e) {\r",
+									"    console.error(\"Failed to parse token response:\", e);\r",
+									"    pm.execution.setNextRequest(null);\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{ClientSecret}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{ClientID}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "client_credentials",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{TokenUrl}}",
+							"host": [
+								"{{TokenUrl}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get CSRF token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR \"2. Get CSRF token\" TESTS ---\r",
+									"\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"if (logging) console.log(\"CSRF request finished. Processing response...\");\r",
+									"\r",
+									"// --- Test Case 1: Check for successful request ---\r",
+									"pm.test(\"Status code is 200 OK\", () => {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// 1. Get the CSRF token from the response headers\r",
+									"const csrfToken = pm.response.headers.get(\"X-CSRF-Token\");\r",
+									"\r",
+									"// --- Test Case 2: Check if CSRF token was returned ---\r",
+									"pm.test(\"X-CSRF-Token header is present\", () => {\r",
+									"    pm.expect(csrfToken).to.exist;\r",
+									"});\r",
+									"\r",
+									"if (csrfToken) {\r",
+									"    if (logging) console.log(\"CSRF Token found:\", csrfToken);\r",
+									"    \r",
+									"    // 2. Save the token to a collection variable\r",
+									"    pm.collectionVariables.set(\"csrfToken\", csrfToken);\r",
+									"\r",
+									"    // 3. Automatically start the next request\r",
+									"    pm.execution.setNextRequest(\"Update configuration parameter of an integration flow\");\r",
+									"\r",
+									"} else {\r",
+									"    // Critical failure, stop the run\r",
+									"    console.error(\"Could not find 'X-CSRF-Token' in response headers. Stopping run.\");\r",
+									"    if (logging) console.log(\"Run stopped.\");\r",
+									"    pm.execution.setNextRequest(null);\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-CSRF-Token",
+								"value": "Fetch",
+								"description": "(Required) To retrieve a new CSRF token the value of the header must be set to ```Fetch```."
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								""
+							]
+						},
+						"description": "You can use the following request to get the CSRF token for this session, which is required for write access via POST, PUT and DELETE operations. Copy the received X-CSRF-Token from the response header.<br>\n\n**In API sandbox this request is not relevant!**"
+					},
+					"response": []
+				},
+				{
+					"name": "Update configuration parameter of an integration flow",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR \"3. Update config\" TESTS & FINAL REPORT ---\r",
+									"\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"if (logging) console.log(`Processing iteration ${pm.info.iteration}: ${pm.iterationData.get(\"IflowName\")}`);\r",
+									"\r",
+									"// Helper function to safely format a CSV cell\r",
+									"function escapeCSV(cell) {\r",
+									"    if (cell === null || typeof cell === 'undefined') return \"\";\r",
+									"    let str = String(cell);\r",
+									"    if (str.includes(',') || str.includes('\"') || str.includes('\\n')) {\r",
+									"        str = str.replace(/\"/g, '\"\"'); // Escape double quotes\r",
+									"        return `\"${str}\"`;\r",
+									"    }\r",
+									"    return str;\r",
+									"}\r",
+									"\r",
+									"let responseCode = pm.response.code;\r",
+									"let responseMessage = \"\";\r",
+									"\r",
+									"// --- Test Case 1: Check for successful update ---\r",
+									"pm.test(\"Status code is 2xx (Success)\", () => {\r",
+									"    pm.expect(responseCode).to.be.oneOf([200, 201, 202, 204]);\r",
+									"});\r",
+									"\r",
+									"// 1. Get the response body\r",
+									"try {\r",
+									"    responseMessage = JSON.stringify(pm.response.json());\r",
+									"} catch (e) {\r",
+									"    responseMessage = pm.response.text();\r",
+									"}\r",
+									"\r",
+									"if (logging) console.log(`Response Code: ${responseCode}, Response Message: ${responseMessage}`);\r",
+									"\r",
+									"// 2. Build the new CSV row string\r",
+									"const rowData = [\r",
+									"    escapeCSV(pm.iterationData.get(\"PackageName\")),\r",
+									"    escapeCSV(pm.iterationData.get(\"PackageID\")),\r",
+									"    escapeCSV(pm.iterationData.get(\"IflowName\")),\r",
+									"    escapeCSV(pm.iterationData.get(\"IflowID\")),\r",
+									"    escapeCSV(pm.iterationData.get(\"ParameterKey\")),\r",
+									"    escapeCSV(pm.iterationData.get(\"ParameterValue\")),\r",
+									"    escapeCSV(pm.iterationData.get(\"DataType\")),\r",
+									"    escapeCSV(responseCode),\r",
+									"    escapeCSV(responseMessage)\r",
+									"];\r",
+									"const newCsvRow = rowData.join(',') + '\\n';\r",
+									"\r",
+									"// 3. Append the new row to the CSV string in the variable\r",
+									"try {\r",
+									"    let currentCsv = pm.collectionVariables.get(\"csvResults\");\r",
+									"    currentCsv += newCsvRow;\r",
+									"    pm.collectionVariables.set(\"csvResults\", currentCsv);\r",
+									"    if (logging) console.log(\"Appended new row to csvResults variable.\");\r",
+									"} catch (e) {\r",
+									"    console.error(\"Failed to update csvResults variable:\", e);\r",
+									"}\r",
+									"\r",
+									"\r",
+									"// -----------------------------------------------------------------\r",
+									"// 💥 FINAL REPORT LOGIC (Looping logic REMOVED)\r",
+									"// -----------------------------------------------------------------\r",
+									"const isLastIteration = pm.info.iteration === (pm.info.iterationCount - 1);\r",
+									"\r",
+									"if (isLastIteration) {\r",
+									"    // This is the LAST row. Send the report.\r",
+									"    if (logging) console.log(`--- LAST ITERATION (${pm.info.iteration}) DETECTED: Starting final report... ---`);\r",
+									"    \r",
+									"    const csvPayload = pm.collectionVariables.get(\"csvResults\");\r",
+									"    if (logging) console.log(`CSV payload is ready to send.`);\r",
+									"\r",
+									"    // 2. Ping check the node server\r",
+									"    const pingRequest = {\r",
+									"        url: 'http://localhost:3000/',\r",
+									"        method: 'GET',\r",
+									"        timeout: 2000 \r",
+									"    };\r",
+									"\r",
+									"    if (logging) console.log(\"Pinging node server at http://localhost:3000/...\");\r",
+									"    pm.collectionVariables.set(\"nodeServerStatus\", \"Pinging...\");\r",
+									"\r",
+									"    pm.sendRequest(pingRequest, (pingError, pingResponse) => {\r",
+									"        if (pingError) {\r",
+									"            const errorMsg = `Node server ping failed. Error: ${pingError.message}. Report not sent.`;\r",
+									"            console.error(errorMsg);\r",
+									"            pm.collectionVariables.set(\"nodeServerStatus\", errorMsg);\r",
+									"            if (logging) console.log(\"Ping failed. Aborting report send. CSV Results are PRESERVED.\");\r",
+									"        \r",
+									"        } else {\r",
+									"            // Ping SUCCEEDED\r",
+									"            if (logging) console.log(`Ping successful (Status: ${pingResponse.code}). Sending report...`);\r",
+									"            pm.collectionVariables.set(\"nodeServerStatus\", \"Ping OK, Sending...\");\r",
+									"\r",
+									"            // 3. Send the actual report\r",
+									"            const sendReportRequest = {\r",
+									"                url: 'http://localhost:3000/save-file',\r",
+									"                method: 'POST',\r",
+									"                header: {\r",
+									"                        'Content-Type': 'text/plain',\r",
+									"                        'X-File-Name': 'Parameters_output_Results.csv',\r",
+									"                        'X-File-Type': 'text'\r",
+									"                    },\r",
+									"                body: { mode: 'raw', raw: csvPayload }\r",
+									"            };\r",
+									"\r",
+									"            pm.sendRequest(sendReportRequest, (sendError, sendResponse) => {\r",
+									"                if (sendError || sendResponse.code !== 200) {\r",
+									"                    const errorMsg = `Failed to send report. Error: ${sendError ? sendError.message : 'Status ' + sendResponse.code + ' ' + sendResponse.text()}`;\r",
+									"                    console.error(errorMsg);\r",
+									"                    pm.collectionVariables.set(\"nodeServerStatus\", errorMsg);\r",
+									"                    if (logging) console.log(\"🔥 Report send failed. CSV Results are PRESERVED.\");\r",
+									"                } else {\r",
+									"                    if (logging) console.log(\"✅ Report successfully sent to node server.\");\r",
+									"                    pm.collectionVariables.set(\"nodeServerStatus\", \"Report Sent Successfully\");\r",
+									"                    pm.collectionVariables.unset(\"csvResults\");\r",
+									"                    if (logging) console.log(\"Final report step complete. Results cleared for next run.\");\r",
+									"                }\r",
+									"            });\r",
+									"        }\r",
+									"    });\r",
+									"    \r",
+									"} else {\r",
+									"    // 💥 THIS IS THE FIX:\r",
+									"    // This block is now empty. We do nothing.\r",
+									"    // Postman's Collection Runner will automatically stop this iteration\r",
+									"    // and start the next one (at \"Get Auth Token\").\r",
+									"    if (logging) console.log(`Iteration ${pm.info.iteration + 1} of ${pm.info.iterationCount} complete. Continuing...`);\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "X-CSRF-Token",
+								"value": "{{csrfToken}}",
+								"description": "(Required) CSRF token that is valid for the current session (see resource 'CSRF Token Handling')"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"ParameterValue\": \"{{ParameterValue}}\",\n    \"DataType\": \"{{DataType}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/IntegrationDesigntimeArtifacts(Id='{{IflowID}}',Version='{{Version}}')/$links/Configurations('{{ParameterKey}}')",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"IntegrationDesigntimeArtifacts(Id='{{IflowID}}',Version='{{Version}}')",
+								"$links",
+								"Configurations('{{ParameterKey}}')"
+							]
+						},
+						"description": "You can use the following request to update the value for a configuration parameters of a designtime integration flow.<br>For further details, refer to the SAP Help Portal documentation [OData API: Integration Content](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html) and to the following SAP Community blog [Remote OData APIs for Integration Flows](https://blogs.sap.com/2018/07/06/cloud-integration-remote-odata-apis-for-integration-flows/).<br>\n\nIn API sandbox only read APIs could be tested. You need to configure an API endpoint for your account, where you have the required write permissions to ntegration flows from designtime.You need to configure an API endpoint for your account, where you have the required write permissions to update configuration parameters of an integration flow."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "03 - Deploy Iflows",
+			"item": [
+				{
+					"name": "Logic: Deploy Iflow Iteration",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR \"[Logic] Workflow Router\" TESTS ---\r",
+									"\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"if (pm.info.iteration === 0) {\r",
+									"    if (logging) console.log(\"--- First Iteration (0): Running Setup for Deploy Iflows ---\");\r",
+									"\r",
+									"    // 1. Data File Validation Check (Requires 'IflowID' and 'Version' in CSV)\r",
+									"    const hasDataFile = pm.iterationData.has(\"IflowID\");\r",
+									"    if (!hasDataFile) {\r",
+									"        const errorMsg = \"FATAL ERROR: No data file loaded or file is invalid. Expected header: 'IflowID'\";\r",
+									"        console.error(`🔥 ${errorMsg}`);\r",
+									"        pm.collectionVariables.set(\"nodeServerStatus\", `RUN CANCELED: ${errorMsg}`);\r",
+									"        throw new Error(errorMsg); \r",
+									"    }\r",
+									"    \r",
+									"    // 2. Initialize CSV Results\r",
+									"    const headers = [\"IflowID\", \"Version\", \"ResponseCode\", \"ResponseMessage\"];\r",
+									"    pm.collectionVariables.set(\"deployIflowsResults\", headers.join(',') + '\\n');\r",
+									"    \r",
+									"    // 3. Clear Old Tokens\r",
+									"    if (logging) console.log(\"Clearing old access tokens...\");\r",
+									"    pm.collectionVariables.unset(\"accessToken\");\r",
+									"    pm.collectionVariables.unset(\"csrfToken\");\r",
+									"    \r",
+									"    pm.execution.setNextRequest(\"Get Auth Token (Deploy)\");\r",
+									"\r",
+									"} else {\r",
+									"    // Subsequent iterations skip token/CSRF refresh\r",
+									"    if (logging) console.log(`--- Iteration ${pm.info.iteration}: Skipping token/CSRF requests... ---`);\r",
+									"    pm.execution.setNextRequest(\"Deploy Iflow\");\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://postman-echo.com/get?iteration={{pm.info.iteration}}",
+							"protocol": "https",
+							"host": [
+								"postman-echo",
+								"com"
+							],
+							"path": [
+								"get"
+							],
+							"query": [
+								{
+									"key": "iteration",
+									"value": "{{pm.info.iteration}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Auth Token (Deploy)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR \"1. Get Token\" TESTS ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"pm.test(\"Status code is 200 OK\", () => pm.response.to.have.status(200));\r",
+									"\r",
+									"try {\r",
+									"    const response = pm.response.json();\r",
+									"    const rawToken = response.access_token; \r",
+									"\r",
+									"    if (rawToken) {\r",
+									"        pm.collectionVariables.set(\"accessToken\", rawToken);\r",
+									"        if (logging) console.log(\"New raw token saved to 'accessToken'.\");\r",
+									"        pm.execution.setNextRequest(\"Get CSRF token (Deploy)\");\r",
+									"    } else {\r",
+									"        console.error(\"Could not find a valid token. Stopping run.\");\r",
+									"        pm.execution.setNextRequest(null);\r",
+									"    }\r",
+									"} catch (e) {\r",
+									"    console.error(\"Failed to parse token response:\", e);\r",
+									"    pm.execution.setNextRequest(null);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{ClientSecret}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{ClientID}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "client_credentials",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{TokenUrl}}",
+							"host": [
+								"{{TokenUrl}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get CSRF token (Deploy)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR \"2. Get CSRF token\" TESTS ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"pm.test(\"Status code is 200 OK\", () => pm.response.to.have.status(200));\r",
+									"\r",
+									"const csrfToken = pm.response.headers.get(\"X-CSRF-Token\");\r",
+									"\r",
+									"pm.test(\"X-CSRF-Token header is present\", () => pm.expect(csrfToken).to.exist);\r",
+									"\r",
+									"if (csrfToken) {\r",
+									"    if (logging) console.log(\"CSRF Token found:\", csrfToken);\r",
+									"    pm.collectionVariables.set(\"csrfToken\", csrfToken);\r",
+									"    pm.execution.setNextRequest(\"Deploy Iflow\");\r",
+									"} else {\r",
+									"    console.error(\"Could not find 'X-CSRF-Token'. Stopping run.\");\r",
+									"    pm.execution.setNextRequest(null);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-CSRF-Token",
+								"value": "Fetch",
+								"description": "(Required) To retrieve a new CSRF token the value of the header must be set to ```Fetch```."
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Deploy Iflow",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR \"Deploy Iflow\" TESTS & FINAL REPORT ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"function escapeCSV(cell) {\r",
+									"    if (cell === null || typeof cell === 'undefined') return \"\";\r",
+									"    let str = String(cell);\r",
+									"    if (str.includes(',') || str.includes('\"') || str.includes('\\n')) {\r",
+									"        str = str.replace(/\"/g, '\"\"');\r",
+									"        return `\"${str}\"`;\r",
+									"    }\r",
+									"    return str;\r",
+									"}\r",
+									"\r",
+									"let responseCode = pm.response.code;\r",
+									"let responseMessage = \"\";\r",
+									"\r",
+									"pm.test(\"Status code is 2xx (Success)\", () => {\r",
+									"    pm.expect(responseCode).to.be.oneOf([200, 201, 202, 204]);\r",
+									"});\r",
+									"\r",
+									"try {\r",
+									"    responseMessage = JSON.stringify(pm.response.json());\r",
+									"} catch (e) {\r",
+									"    responseMessage = pm.response.text();\r",
+									"}\r",
+									"\r",
+									"const rowData = [\r",
+									"    escapeCSV(pm.iterationData.get(\"IflowID\")),\r",
+									"    escapeCSV(pm.iterationData.get(\"Version\") || \"active\"),\r",
+									"    escapeCSV(responseCode),\r",
+									"    escapeCSV(responseMessage)\r",
+									"];\r",
+									"const newCsvRow = rowData.join(',') + '\\n';\r",
+									"\r",
+									"try {\r",
+									"    let currentCsv = pm.collectionVariables.get(\"deployIflowsResults\");\r",
+									"    currentCsv += newCsvRow;\r",
+									"    pm.collectionVariables.set(\"deployIflowsResults\", currentCsv);\r",
+									"} catch (e) {\r",
+									"    console.error(\"Failed to update deployIflowsResults variable:\", e);\r",
+									"}\r",
+									"\r",
+									"const isLastIteration = pm.info.iteration === (pm.info.iterationCount - 1);\r",
+									"if (isLastIteration) {\r",
+									"    if (logging) console.log(`--- LAST ITERATION DETECTED: Report in deployIflowsResults is ready. ---`);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-CSRF-Token",
+								"value": "{{csrfToken}}",
+								"description": "(Required) CSRF token that is valid for the current session"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/DeployIntegrationDesigntimeArtifact?Id='{{IflowID}}'&Version='{{Version}}'",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"DeployIntegrationDesigntimeArtifact"
+							],
+							"query": [
+								{
+									"key": "Id",
+									"value": "'{{IflowID}}'"
+								},
+								{
+									"key": "Version",
+									"value": "'{{Version}}'"
+								}
+							]
+						},
+						"description": "Deploys an integration flow artifact by ID and Version. Expects 'IflowID' and optional 'Version' fields in the data file. Version defaults to 'active'."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "04 - UnDeploy Iflows",
+			"item": [
+				{
+					"name": "Logic: UnDeploy Iflow Iteration",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR \"[Logic] Workflow Router\" TESTS ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"if (pm.info.iteration === 0) {\r",
+									"    if (logging) console.log(\"--- First Iteration (0): Running Setup for UnDeploy Iflows ---\");\r",
+									"\r",
+									"    // 1. Data File Validation Check (Requires 'IflowID' in CSV)\r",
+									"    const hasDataFile = pm.iterationData.has(\"IflowID\");\r",
+									"    if (!hasDataFile) {\r",
+									"        const errorMsg = \"FATAL ERROR: No data file loaded or file is invalid. Expected header: 'IflowID'\";\r",
+									"        console.error(`🔥 ${errorMsg}`);\r",
+									"        pm.collectionVariables.set(\"nodeServerStatus\", `RUN CANCELED: ${errorMsg}`);\r",
+									"        throw new Error(errorMsg); \r",
+									"    }\r",
+									"    \r",
+									"    // 2. Initialize CSV Results\r",
+									"    const headers = [\"IflowID\", \"ResponseCode\", \"ResponseMessage\"];\r",
+									"    pm.collectionVariables.set(\"undeployIflowsResults\", headers.join(',') + '\\n');\r",
+									"    \r",
+									"    // 3. Clear Old Tokens\r",
+									"    pm.collectionVariables.unset(\"accessToken\");\r",
+									"    pm.collectionVariables.unset(\"csrfToken\");\r",
+									"    \r",
+									"    pm.execution.setNextRequest(\"Get Auth Token (UnDeploy)\");\r",
+									"\r",
+									"} else {\r",
+									"    // Subsequent iterations skip token/CSRF refresh\r",
+									"    if (logging) console.log(`--- Iteration ${pm.info.iteration}: Skipping token/CSRF requests... ---`);\r",
+									"    pm.execution.setNextRequest(\"Undeploy Iflow\");\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://postman-echo.com/get?iteration={{pm.info.iteration}}",
+							"protocol": "https",
+							"host": [
+								"postman-echo",
+								"com"
+							],
+							"path": [
+								"get"
+							],
+							"query": [
+								{
+									"key": "iteration",
+									"value": "{{pm.info.iteration}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Auth Token (UnDeploy)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR \"1. Get Token\" TESTS ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"pm.test(\"Status code is 200 OK\", () => pm.response.to.have.status(200));\r",
+									"\r",
+									"try {\r",
+									"    const response = pm.response.json();\r",
+									"    const rawToken = response.access_token; \r",
+									"\r",
+									"    if (rawToken) {\r",
+									"        pm.collectionVariables.set(\"accessToken\", rawToken);\r",
+									"        if (logging) console.log(\"New raw token saved to 'accessToken'.\");\r",
+									"        pm.execution.setNextRequest(\"Get CSRF token (UnDeploy)\");\r",
+									"    } else {\r",
+									"        console.error(\"Could not find a valid token. Stopping run.\");\r",
+									"        pm.execution.setNextRequest(null);\r",
+									"    }\r",
+									"} catch (e) {\r",
+									"    console.error(\"Failed to parse token response:\", e);\r",
+									"    pm.execution.setNextRequest(null);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{ClientSecret}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{ClientID}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "client_credentials",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{TokenUrl}}",
+							"host": [
+								"{{TokenUrl}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get CSRF token (UnDeploy)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR \"2. Get CSRF token\" TESTS ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"pm.test(\"Status code is 200 OK\", () => pm.response.to.have.status(200));\r",
+									"\r",
+									"const csrfToken = pm.response.headers.get(\"X-CSRF-Token\");\r",
+									"\r",
+									"pm.test(\"X-CSRF-Token header is present\", () => pm.expect(csrfToken).to.exist);\r",
+									"\r",
+									"if (csrfToken) {\r",
+									"    if (logging) console.log(\"CSRF Token found:\", csrfToken);\r",
+									"    pm.collectionVariables.set(\"csrfToken\", csrfToken);\r",
+									"    pm.execution.setNextRequest(\"Undeploy Iflow\");\r",
+									"} else {\r",
+									"    console.error(\"Could not find 'X-CSRF-Token'. Stopping run.\");\r",
+									"    pm.execution.setNextRequest(null);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-CSRF-Token",
+								"value": "Fetch",
+								"description": "(Required) To retrieve a new CSRF token the value of the header must be set to ```Fetch```."
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Undeploy Iflow",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR \"Undeploy Iflow\" TESTS & FINAL REPORT ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"function escapeCSV(cell) {\r",
+									"    if (cell === null || typeof cell === 'undefined') return \"\";\r",
+									"    let str = String(cell);\r",
+									"    if (str.includes(',') || str.includes('\"') || str.includes('\\n')) {\r",
+									"        str = str.replace(/\"/g, '\"\"');\r",
+									"        return `\"${str}\"`;\r",
+									"    }\r",
+									"    return str;\r",
+									"}\r",
+									"\r",
+									"let responseCode = pm.response.code;\r",
+									"let responseMessage = \"\";\r",
+									"\r",
+									"pm.test(\"Status code is 2xx (Success)\", () => {\r",
+									"    pm.expect(responseCode).to.be.oneOf([200, 201, 202, 204]);\r",
+									"});\r",
+									"\r",
+									"try {\r",
+									"    responseMessage = JSON.stringify(pm.response.json());\r",
+									"} catch (e) {\r",
+									"    responseMessage = pm.response.text();\r",
+									"}\r",
+									"\r",
+									"const rowData = [\r",
+									"    escapeCSV(pm.iterationData.get(\"IflowID\")),\r",
+									"    escapeCSV(responseCode),\r",
+									"    escapeCSV(responseMessage)\r",
+									"];\r",
+									"const newCsvRow = rowData.join(',') + '\\n';\r",
+									"\r",
+									"try {\r",
+									"    let currentCsv = pm.collectionVariables.get(\"undeployIflowsResults\");\r",
+									"    currentCsv += newCsvRow;\r",
+									"    pm.collectionVariables.set(\"undeployIflowsResults\", currentCsv);\r",
+									"} catch (e) {\r",
+									"    console.error(\"Failed to update undeployIflowsResults variable:\", e);\r",
+									"}\r",
+									"\r",
+									"const isLastIteration = pm.info.iteration === (pm.info.iterationCount - 1);\r",
+									"if (isLastIteration) {\r",
+									"    if (logging) console.log(`--- LAST ITERATION DETECTED: Report in undeployIflowsResults is ready. ---`);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "X-CSRF-Token",
+								"value": "{{csrfToken}}",
+								"description": "(Required) CSRF token that is valid for the current session"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/IntegrationRuntimeArtifacts('{{IflowID}}')",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"IntegrationRuntimeArtifacts('{{IflowID}}')"
+							]
+						},
+						"description": "Undeploys an integration flow artifact by its runtime ID. Expects 'IflowID' field in the data file."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "05 - Deploy Script Collections",
+			"item": [
+				{
+					"name": "Logic: Deploy Script Collection Iteration",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR \"[Logic] Workflow Router\" TESTS ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"if (pm.info.iteration === 0) {\r",
+									"    if (logging) console.log(\"--- First Iteration (0): Running Setup for Deploy Script Collections ---\");\r",
+									"\r",
+									"    // 1. Data File Validation Check (Requires 'ScriptCollectionID' in CSV)\r",
+									"    const hasDataFile = pm.iterationData.has(\"ScriptCollectionID\");\r",
+									"    if (!hasDataFile) {\r",
+									"        const errorMsg = \"FATAL ERROR: No data file loaded or file is invalid. Expected header: 'ScriptCollectionID'\";\r",
+									"        console.error(`🔥 ${errorMsg}`);\r",
+									"        pm.collectionVariables.set(\"nodeServerStatus\", `RUN CANCELED: ${errorMsg}`);\r",
+									"        throw new Error(errorMsg); \r",
+									"    }\r",
+									"    \r",
+									"    // 2. Initialize CSV Results\r",
+									"    const headers = [\"ScriptCollectionID\", \"Version\", \"ResponseCode\", \"ResponseMessage\"];\r",
+									"    pm.collectionVariables.set(\"deployScriptCollectionResults\", headers.join(',') + '\\n');\r",
+									"    \r",
+									"    // 3. Clear Old Tokens\r",
+									"    pm.collectionVariables.unset(\"accessToken\");\r",
+									"    pm.collectionVariables.unset(\"csrfToken\");\r",
+									"    \r",
+									"    pm.execution.setNextRequest(\"Get Auth Token (Script Collection)\");\r",
+									"\r",
+									"} else {\r",
+									"    if (logging) console.log(`--- Iteration ${pm.info.iteration}: Skipping token/CSRF requests... ---`);\r",
+									"    pm.execution.setNextRequest(\"Deploy Script Collection\");\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://postman-echo.com/get?iteration={{pm.info.iteration}}",
+							"protocol": "https",
+							"host": [
+								"postman-echo",
+								"com"
+							],
+							"path": [
+								"get"
+							],
+							"query": [
+								{
+									"key": "iteration",
+									"value": "{{pm.info.iteration}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Auth Token (Script Collection)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR \"1. Get Token\" TESTS ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"pm.test(\"Status code is 200 OK\", () => pm.response.to.have.status(200));\r",
+									"\r",
+									"try {\r",
+									"    const response = pm.response.json();\r",
+									"    const rawToken = response.access_token; \r",
+									"\r",
+									"    if (rawToken) {\r",
+									"        pm.collectionVariables.set(\"accessToken\", rawToken);\r",
+									"        if (logging) console.log(\"New raw token saved to 'accessToken'.\");\r",
+									"        pm.execution.setNextRequest(\"Get CSRF token (Script Collection)\");\r",
+									"    } else {\r",
+									"        console.error(\"Could not find a valid token. Stopping run.\");\r",
+									"        pm.execution.setNextRequest(null);\r",
+									"    }\r",
+									"} catch (e) {\r",
+									"    console.error(\"Failed to parse token response:\", e);\r",
+									"    pm.execution.setNextRequest(null);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{ClientSecret}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{ClientID}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "client_credentials",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{TokenUrl}}",
+							"host": [
+								"{{TokenUrl}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get CSRF token (Script Collection)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR \"2. Get CSRF token\" TESTS ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"pm.test(\"Status code is 200 OK\", () => pm.response.to.have.status(200));\r",
+									"\r",
+									"const csrfToken = pm.response.headers.get(\"X-CSRF-Token\");\r",
+									"\r",
+									"pm.test(\"X-CSRF-Token header is present\", () => pm.expect(csrfToken).to.exist);\r",
+									"\r",
+									"if (csrfToken) {\r",
+									"    if (logging) console.log(\"CSRF Token found:\", csrfToken);\r",
+									"    pm.collectionVariables.set(\"csrfToken\", csrfToken);\r",
+									"    pm.execution.setNextRequest(\"Deploy Script Collection\");\r",
+									"} else {\r",
+									"    console.error(\"Could not find 'X-CSRF-Token'. Stopping run.\");\r",
+									"    pm.execution.setNextRequest(null);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-CSRF-Token",
+								"value": "Fetch",
+								"description": "(Required) To retrieve a new CSRF token the value of the header must be set to ```Fetch```."
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Deploy Script Collection",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR \"Deploy Script Collection\" TESTS & FINAL REPORT ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"function escapeCSV(cell) {\r",
+									"    if (cell === null || typeof cell === 'undefined') return \"\";\r",
+									"    let str = String(cell);\r",
+									"    if (str.includes(',') || str.includes('\"') || str.includes('\\n')) {\r",
+									"        str = str.replace(/\"/g, '\"\"');\r",
+									"        return `\"${str}\"`;\r",
+									"    }\r",
+									"    return str;\r",
+									"}\r",
+									"\r",
+									"let responseCode = pm.response.code;\r",
+									"let responseMessage = \"\";\r",
+									"\r",
+									"pm.test(\"Status code is 2xx (Success)\", () => {\r",
+									"    pm.expect(responseCode).to.be.oneOf([200, 201, 202, 204]);\r",
+									"});\r",
+									"\r",
+									"try {\r",
+									"    responseMessage = JSON.stringify(pm.response.json());\r",
+									"} catch (e) {\r",
+									"    responseMessage = pm.response.text();\r",
+									"}\r",
+									"\r",
+									"const rowData = [\r",
+									"    escapeCSV(pm.iterationData.get(\"ScriptCollectionID\")),\r",
+									"    escapeCSV(pm.iterationData.get(\"Version\") || \"active\"),\r",
+									"    escapeCSV(responseCode),\r",
+									"    escapeCSV(responseMessage)\r",
+									"];\r",
+									"const newCsvRow = rowData.join(',') + '\\n';\r",
+									"\r",
+									"try {\r",
+									"    let currentCsv = pm.collectionVariables.get(\"deployScriptCollectionResults\");\r",
+									"    currentCsv += newCsvRow;\r",
+									"    pm.collectionVariables.set(\"deployScriptCollectionResults\", currentCsv);\r",
+									"} catch (e) {\r",
+									"    console.error(\"Failed to update deployScriptCollectionResults variable:\", e);\r",
+									"}\r",
+									"\r",
+									"const isLastIteration = pm.info.iteration === (pm.info.iterationCount - 1);\r",
+									"if (isLastIteration) {\r",
+									"    if (logging) console.log(`--- LAST ITERATION DETECTED: Report in deployScriptCollectionResults is ready. ---`);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-CSRF-Token",
+								"value": "{{csrfToken}}",
+								"description": "(Required) CSRF token that is valid for the current session"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/DeployScriptCollectionDesigntimeArtifact?Id='{{ScriptCollectionID}}'&Version='{{Version}}'",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"DeployScriptCollectionDesigntimeArtifact"
+							],
+							"query": [
+								{
+									"key": "Id",
+									"value": "'{{ScriptCollectionID}}'"
+								},
+								{
+									"key": "Version",
+									"value": "'{{Version}}'"
+								}
+							]
+						},
+						"description": "Deploys a Script Collection artifact. Expects 'ScriptCollectionID' and optional 'Version' in the data file. Version defaults to 'active'."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "06 - Deploy Value Mappings",
+			"item": [
+				{
+					"name": "Logic: Deploy Value Mapping Iteration",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR \"[Logic] Workflow Router\" TESTS ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"if (pm.info.iteration === 0) {\r",
+									"    if (logging) console.log(\"--- First Iteration (0): Running Setup for Deploy Value Mappings ---\");\r",
+									"\r",
+									"    // 1. Data File Validation Check (Requires 'ValueMappingID' in CSV)\r",
+									"    const hasDataFile = pm.iterationData.has(\"ValueMappingID\");\r",
+									"    if (!hasDataFile) {\r",
+									"        const errorMsg = \"FATAL ERROR: No data file loaded or file is invalid. Expected header: 'ValueMappingID'\";\r",
+									"        console.error(`🔥 ${errorMsg}`);\r",
+									"        pm.collectionVariables.set(\"nodeServerStatus\", `RUN CANCELED: ${errorMsg}`);\r",
+									"        throw new Error(errorMsg); \r",
+									"    }\r",
+									"    \r",
+									"    // 2. Initialize CSV Results\r",
+									"    const headers = [\"ValueMappingID\", \"Version\", \"ResponseCode\", \"ResponseMessage\"];\r",
+									"    pm.collectionVariables.set(\"deployValueMappingResults\", headers.join(',') + '\\n');\r",
+									"    \r",
+									"    // 3. Clear Old Tokens\r",
+									"    pm.collectionVariables.unset(\"accessToken\");\r",
+									"    pm.collectionVariables.unset(\"csrfToken\");\r",
+									"    \r",
+									"    pm.execution.setNextRequest(\"Get Auth Token (Value Mapping)\");\r",
+									"\r",
+									"} else {\r",
+									"    if (logging) console.log(`--- Iteration ${pm.info.iteration}: Skipping token/CSRF requests... ---`);\r",
+									"    pm.execution.setNextRequest(\"Deploy Value Mapping\");\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://postman-echo.com/get?iteration={{pm.info.iteration}}",
+							"protocol": "https",
+							"host": [
+								"postman-echo",
+								"com"
+							],
+							"path": [
+								"get"
+							],
+							"query": [
+								{
+									"key": "iteration",
+									"value": "{{pm.info.iteration}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Auth Token (Value Mapping)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR \"1. Get Token\" TESTS ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"pm.test(\"Status code is 200 OK\", () => pm.response.to.have.status(200));\r",
+									"\r",
+									"try {\r",
+									"    const response = pm.response.json();\r",
+									"    const rawToken = response.access_token; \r",
+									"\r",
+									"    if (rawToken) {\r",
+									"        pm.collectionVariables.set(\"accessToken\", rawToken);\r",
+									"        if (logging) console.log(\"New raw token saved to 'accessToken'.\");\r",
+									"        pm.execution.setNextRequest(\"Get CSRF token (Value Mapping)\");\r",
+									"    } else {\r",
+									"        console.error(\"Could not find a valid token. Stopping run.\");\r",
+									"        pm.execution.setNextRequest(null);\r",
+									"    }\r",
+									"} catch (e) {\r",
+									"    console.error(\"Failed to parse token response:\", e);\r",
+									"    pm.execution.setNextRequest(null);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{ClientSecret}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{ClientID}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "client_credentials",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{TokenUrl}}",
+							"host": [
+								"{{TokenUrl}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get CSRF token (Value Mapping)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR \"2. Get CSRF token\" TESTS ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"pm.test(\"Status code is 200 OK\", () => pm.response.to.have.status(200));\r",
+									"\r",
+									"const csrfToken = pm.response.headers.get(\"X-CSRF-Token\");\r",
+									"\r",
+									"pm.test(\"X-CSRF-Token header is present\", () => pm.expect(csrfToken).to.exist);\r",
+									"\r",
+									"if (csrfToken) {\r",
+									"    if (logging) console.log(\"CSRF Token found:\", csrfToken);\r",
+									"    pm.collectionVariables.set(\"csrfToken\", csrfToken);\r",
+									"    pm.execution.setNextRequest(\"Deploy Value Mapping\");\r",
+									"} else {\r",
+									"    console.error(\"Could not find 'X-CSRF-Token'. Stopping run.\");\r",
+									"    pm.execution.setNextRequest(null);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-CSRF-Token",
+								"value": "Fetch",
+								"description": "(Required) To retrieve a new CSRF token the value of the header must be set to ```Fetch```."
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Deploy Value Mapping",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// --- SCRIPT FOR \"Deploy Value Mapping\" TESTS & FINAL REPORT ---\r",
+									"const logging = pm.collectionVariables.get(\"logging\") === \"true\";\r",
+									"\r",
+									"function escapeCSV(cell) {\r",
+									"    if (cell === null || typeof cell === 'undefined') return \"\";\r",
+									"    let str = String(cell);\r",
+									"    if (str.includes(',') || str.includes('\"') || str.includes('\\n')) {\r",
+									"        str = str.replace(/\"/g, '\"\"');\r",
+									"        return `\"${str}\"`;\r",
+									"    }\r",
+									"    return str;\r",
+									"}\r",
+									"\r",
+									"let responseCode = pm.response.code;\r",
+									"let responseMessage = \"\";\r",
+									"\r",
+									"pm.test(\"Status code is 2xx (Success)\", () => {\r",
+									"    pm.expect(responseCode).to.be.oneOf([200, 201, 202, 204]);\r",
+									"});\r",
+									"\r",
+									"try {\r",
+									"    responseMessage = JSON.stringify(pm.response.json());\r",
+									"} catch (e) {\r",
+									"    responseMessage = pm.response.text();\r",
+									"}\r",
+									"\r",
+									"const rowData = [\r",
+									"    escapeCSV(pm.iterationData.get(\"ValueMappingID\")),\r",
+									"    escapeCSV(pm.iterationData.get(\"Version\") || \"active\"),\r",
+									"    escapeCSV(responseCode),\r",
+									"    escapeCSV(responseMessage)\r",
+									"];\r",
+									"const newCsvRow = rowData.join(',') + '\\n';\r",
+									"\r",
+									"try {\r",
+									"    let currentCsv = pm.collectionVariables.get(\"deployValueMappingResults\");\r",
+									"    currentCsv += newCsvRow;\r",
+									"    pm.collectionVariables.set(\"deployValueMappingResults\", currentCsv);\r",
+									"} catch (e) {\r",
+									"    console.error(\"Failed to update deployValueMappingResults variable:\", e);\r",
+									"}\r",
+									"\r",
+									"const isLastIteration = pm.info.iteration === (pm.info.iterationCount - 1);\r",
+									"if (isLastIteration) {\r",
+									"    if (logging) console.log(`--- LAST ITERATION DETECTED: Report in deployValueMappingResults is ready. ---`);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-CSRF-Token",
+								"value": "{{csrfToken}}",
+								"description": "(Required) CSRF token that is valid for the current session"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/DeployValueMappingDesigntimeArtifact?Id='{{ValueMappingID}}'&Version='{{Version}}'",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"DeployValueMappingDesigntimeArtifact"
+							],
+							"query": [
+								{
+									"key": "Id",
+									"value": "'{{ValueMappingID}}'"
+								},
+								{
+									"key": "Version",
+									"value": "'{{Version}}'"
+								}
+							]
+						},
+						"description": "Deploys a Value Mapping artifact. Expects 'ValueMappingID' and optional 'Version' in the data file. Version defaults to 'active'."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "Version",
+			"value": "active",
+			"description": {
+				"content": "User Defined",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "runGetConfigurations",
+			"value": "",
+			"description": {
+				"content": "User Defined",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "runDownloadFlow",
+			"value": "",
+			"description": {
+				"content": "User Defined",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "nodeServerUrl",
+			"value": "",
+			"description": {
+				"content": "User Defined",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "logging",
+			"value": "",
+			"description": {
+				"content": "User Defined",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "cookieDomainsToClear",
+			"value": "",
+			"description": {
+				"content": "User Defined",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "specificPackageIDsList",
+			"value": "",
+			"description": {
+				"content": "User Defined",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "accessToken",
+			"value": ""
+		},
+		{
+			"key": "TotalPackageCount",
+			"value": ""
+		},
+		{
+			"key": "TotalIflowCount",
+			"value": ""
+		},
+		{
+			"key": "PackageList",
+			"value": ""
+		},
+		{
+			"key": "IflowList",
+			"value": ""
+		},
+		{
+			"key": "PackageCsvList",
+			"value": ""
+		},
+		{
+			"key": "IflowCsvList",
+			"value": ""
+		},
+		{
+			"key": "parametersCsvOutput",
+			"value": ""
+		},
+		{
+			"key": "csrfToken",
+			"value": ""
+		},
+		{
+			"key": "nodeServerStatus",
+			"value": ""
+		},
+		{
+			"key": "specificParametersCsvOutput",
+			"value": ""
+		},
+		{
+			"key": "undeployIflowsResults",
+			"value": ""
+		},
+		{
+			"key": "deployIflowsResults",
+			"value": ""
+		}
+	]
+}
